@@ -4,7 +4,7 @@ from collections import Counter
 import config  # Imports our config.py file
 from utils import format_clp
 
-def analyze_movements(cleaned_file_path: str):
+def analyze_movements(cleaned_file_path: str, start_date: str = None):
     """
     Reads the clean XLSX file and performs the analysis of
     purchases vs. payments to find unpaid movements.
@@ -19,6 +19,19 @@ def analyze_movements(cleaned_file_path: str):
     except Exception as e:
         print(f"Error reading processed file: {e}", file=sys.stderr)
         return
+
+    # Convertir la columna Date a objetos datetime para filtrar y ordenar correctamente
+    # (El pre-procesamiento guarda las fechas como strings DD/MM/YYYY)
+    df['Date'] = pd.to_datetime(df['Date'], dayfirst=True)
+
+    if start_date:
+        try:
+            filter_dt = pd.to_datetime(start_date)
+            print(f"Filtro de fecha activo: Analizando desde {filter_dt.strftime('%Y-%m-%d')}")
+            df = df[df['Date'] >= filter_dt]
+        except ValueError:
+            print(f"Error: Formato de fecha inválido '{start_date}'. Use YYYY-MM-DD.", file=sys.stderr)
+            return
 
     # 1. Filter payments and convert amounts to positive
     payment_filter = df['Description'].isin(config.PAYMENT_TERMS)

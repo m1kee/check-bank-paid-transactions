@@ -31,6 +31,13 @@ def main():
         help="Optional prefix for the clean output file. (Ex: 'my_report')"
     )
     
+    parser.add_argument(
+        "-d", "--start-date",
+        dest="start_date",
+        type=str,
+        help="Fecha de inicio para el análisis (Formato: YYYY-MM-DD). Se ignorarán movimientos anteriores."
+    )
+    
     args = parser.parse_args()
     
     # --- NEW NAMING LOGIC ---
@@ -87,7 +94,7 @@ def main():
         # We don't exit here, as the analysis can still run
         
     # --- PART 2: ANALYSIS ---
-    analyze_movements(output_path)
+    analyze_movements(output_path, start_date=args.start_date)
     
     print("\nWorkflow complete.")
 
