@@ -33,7 +33,10 @@ La versión vive **solo** en `pyproject.toml` y sigue [SemVer](https://semver.or
 Pasos, dentro del mismo PR:
 1. `uv version --bump <major|minor|patch>`. Esto también actualiza `uv.lock`.
 2. En `CHANGELOG.md`, mover lo de `## [Unreleased]` a `## [X.Y.Z] - AAAA-MM-DD`, dejar `[Unreleased]` vacío y actualizar los links de comparación al final del archivo.
-3. `uv run python -m unittest`: `tests/test_version.py` falla si la versión no tiene su entrada en el changelog.
+3. `uv run python -m unittest`. **Todo bump de versión debe tener entradas en el CHANGELOG**: `tests/test_version.py` (que corre en el CI) falla si la sección de la versión actual
+   - no existe o no tiene fecha (`## [X.Y.Z] - AAAA-MM-DD`),
+   - no tiene al menos una entrada `- ...` bajo `### Added`, `Changed`, `Deprecated`, `Removed`, `Fixed` o `Security` (otros subtítulos tampoco se aceptan),
+   - o no tiene su link `[X.Y.Z]: https://...` al final del archivo.
 4. El título del PR sigue Conventional Commits, y la descripción indica el bump y por qué.
 
 Mientras se trabaja, los cambios se anotan en `## [Unreleased]` del `CHANGELOG.md`, con el formato [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/): Added / Changed / Fixed / Removed.

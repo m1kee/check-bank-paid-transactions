@@ -17,8 +17,8 @@ Fase 0 del roadmap (`feature-proposals/`): base de lógica reutilizable, sin UI.
 - Se pueden pasar varios archivos a la vez; los movimientos repetidos entre descargas se cuentan una sola vez (10).
 - Sección "Pagos sin compra asociada" en la consola y en el reporte HTML.
 - `--version` en la CLI y versión en el pie del reporte.
-- Suite de tests con datos inventados (41 tests) y CI en GitHub Actions (23).
-- `CHANGELOG.md`, y un test que falla si la versión de `pyproject.toml` no tiene su entrada aquí.
+- Suite de tests con datos inventados y CI en GitHub Actions (23).
+- `CHANGELOG.md`, y tests que obligan a que cada versión de `pyproject.toml` tenga aquí una sección con fecha, al menos una entrada y su link de comparación.
 - `AGENTS.md` (importado desde `CLAUDE.md`) con las convenciones del repo y la regla de subir la versión en cada PR.
 - `pyproject.toml` y `uv.lock`: el proyecto se instala con [uv](https://docs.astral.sh/uv/) y la CLI queda como el comando `bankcheck` (26).
 
