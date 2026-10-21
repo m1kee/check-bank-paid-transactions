@@ -10,6 +10,7 @@ processed-archive/
 
 # Virtual environment
 venv/
+.venv/
 *.env
 
 # Generated HTML reports (contain personal data)
