@@ -3,6 +3,27 @@ import sys
 from collections import Counter
 import config  # Imports our config.py file
 from utils import format_clp
+import html_reporter
+
+
+def is_payment_description(description: str) -> bool:
+    """Return True when the description matches known payment patterns."""
+    if not isinstance(description, str):
+        return False
+
+    desc = description.upper().strip()
+    if not desc:
+        return False
+
+    if "MERCADOPAGO" in desc and "COMERCIALSANA" in desc:
+        return False
+
+    for term in config.PAYMENT_TERMS:
+        if term.upper() in desc:
+            return True
+
+    return False
+
 
 def analyze_movements(cleaned_file_path: str, start_date: str = None):
     """
@@ -33,10 +54,11 @@ def analyze_movements(cleaned_file_path: str, start_date: str = None):
             print(f"Error: Formato de fecha inválido '{start_date}'. Use YYYY-MM-DD.", file=sys.stderr)
             return
 
-    # 1. Filter payments and convert amounts to positive
-    payment_filter = df['Description'].isin(config.PAYMENT_TERMS)
+    # 1. Filter payments and convert amounts to positive.
+    description_upper = df['Description'].astype(str)
+    payment_filter = description_upper.apply(is_payment_description)
     payments = df[payment_filter].copy()
-    payments["Amount ($)"] = payments["Amount ($)"].abs() # Use .abs() for safety
+    payments["Amount ($)"] = payments["Amount ($)"].abs()  # Use .abs() for safety
 
     # 2. Filter purchases
     shopping_filter = (~payment_filter) & (df["Installments"] == config.PURCHASE_INSTALLMENT_CONDITION)
@@ -81,3 +103,7 @@ def analyze_movements(cleaned_file_path: str, start_date: str = None):
     print(f"Total purchases (1 install): {format_clp(total_shopping)}")
     print(f"Difference (Pay - Shop):  {format_clp(total_payments - total_shopping)}")
     print("--- Analysis Complete ---")
+
+    # 7. Generate HTML report and open browser
+    print("\nGenerando reporte visual HTML...")
+    html_reporter.generate_and_open_html_report(no_match, total_unpaid, total_payments, total_shopping, start_date)

@@ -11,3 +11,9 @@ processed-archive/
 # Virtual environment
 venv/
 *.env
+
+# Generated HTML reports (contain personal data)
+reports/
+
+# Temporary scripts
+tmp_*.py

@@ -48,7 +48,12 @@ def process_raw_file(input_path: str, output_path: str) -> bool:
         # 4. Clean data (drop rows with no Date)
         clean_df = clean_df.dropna(subset=['Date'])
 
-        # 5. Transform data types using utils
+        # 5. Normalize text columns to avoid whitespace/case mismatches later.
+        clean_df['Description'] = clean_df['Description'].astype(str).str.strip()
+        clean_df['Installments'] = clean_df['Installments'].astype(str).str.strip()
+        clean_df['City'] = clean_df['City'].astype(str).str.strip()
+
+        # 6. Transform data types using utils
         clean_df['Date'] = safe_to_datetime(clean_df['Date'])
         clean_df['Amount ($)'] = safe_to_int(clean_df['Amount ($)'])
         

@@ -2,6 +2,8 @@
 # New folder to store raw files after they are processed
 PROCESSED_ARCHIVE_FOLDER = "processed-archive"
 
+# Folder to store the generated HTML reports
+REPORTS_FOLDER = "reports"
 
 # --- Pre-processing Configuration ---
 
@@ -16,8 +18,8 @@ CLEAN_COLUMN_NAMES = [
     "Card Type",
     "Description",
     "City",
-    "Installments",  # "Installments" is repeated
     "Installments",
+    "Installment Details",
     "Amount ($)"
 ]
 
@@ -27,7 +29,12 @@ ROWS_TO_SKIP = 18
 # --- Analysis Configuration ---
 
 # Terms that identify a payment in the "Description" column
-PAYMENT_TERMS = ["Pago Pesos TAR", "Pago Pesos TEF PAGO NORMAL"]
+PAYMENT_TERMS = [
+    "PAGO PESOS TAR",
+    "PAGO PESOS TEF",
+    "PAGO ONLINE",
+    "MERCADOPAGO",
+]
 
 # Condition to identify a purchase (e.g., "01/01" in installments)
 PURCHASE_INSTALLMENT_CONDITION = "01/01"
