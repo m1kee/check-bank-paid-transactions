@@ -1,4 +1,5 @@
 """Read the bank's movements export and turn it into a normalized DataFrame."""
+import logging
 import unicodedata
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -17,6 +18,8 @@ COLUMNS = [
     "Installment Details",
     "Amount",
 ]
+
+log = logging.getLogger(__name__)
 
 # How many rows below a section title the header row may appear
 HEADER_SEARCH_ROWS = 3
@@ -72,6 +75,7 @@ def parse_raw(raw: pd.DataFrame) -> ParsedFile:
     for i, (profile, header_row) in enumerate(sections):
         next_section_row = sections[i + 1][1] - 1 if i + 1 < len(sections) else len(raw)
         frame, warnings = _read_section(raw, profile, header_row, next_section_row)
+        log.debug("Sección '%s': encabezado en la fila %d, %d movimientos", profile.name, header_row + 1, len(frame))
         if not profile.verified:
             warnings.append(
                 f"El formato '{profile.name}' aún no se ha validado con un archivo real; revisa los montos."

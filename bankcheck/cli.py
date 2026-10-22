@@ -1,7 +1,13 @@
-"""Command-line entry point: read bank downloads, find unpaid purchases and open the HTML report."""
+"""
+Command-line entry point: read bank downloads, find unpaid purchases and open the HTML report.
+
+Progress and problems go to stderr through `logging` (-v / -q change how much);
+the analysis itself is printed to stdout, so it can be redirected to a file.
+"""
 import argparse
 import datetime
 import hashlib
+import logging
 import os
 import shutil
 import sys
@@ -16,6 +22,27 @@ from bankcheck.dedup import merge_downloads
 from bankcheck.formatting import CURRENCY_NAMES, format_amount
 from bankcheck.parsers import ParseError, parse_file
 from bankcheck.report_html import render_report
+
+log = logging.getLogger("bankcheck")
+
+LEVEL_PREFIXES = {logging.WARNING: "Aviso: ", logging.ERROR: "Error: ", logging.CRITICAL: "Error: "}
+
+
+class ConsoleFormatter(logging.Formatter):
+    """Plain messages, with "Aviso:" / "Error:" in front of warnings and errors."""
+
+    def format(self, record):
+        return LEVEL_PREFIXES.get(record.levelno, "") + super().format(record)
+
+
+def setup_logging(verbosity: int):
+    """verbosity: -1 = only warnings and errors, 0 = progress, 1 = debug details."""
+    level = {-1: logging.WARNING, 0: logging.INFO}.get(verbosity, logging.DEBUG)
+    handler = logging.StreamHandler(sys.stderr)
+    handler.setFormatter(ConsoleFormatter("%(message)s"))
+    log.handlers[:] = [handler]
+    log.setLevel(level)
+    log.propagate = False
 
 
 def parse_cli_date(value: str) -> datetime.datetime:
@@ -53,6 +80,15 @@ def build_arg_parser() -> argparse.ArgumentParser:
         help="Importa los archivos al historial SQLite y analiza todo el historial, no solo "
         f"estas descargas (por defecto '{config.DB_PATH}').",
     )
+    verbosity = parser.add_mutually_exclusive_group()
+    verbosity.add_argument(
+        "-v", "--verbose", dest="verbosity", action="store_const", const=1, default=0,
+        help="Muestra más detalle (para depurar).",
+    )
+    verbosity.add_argument(
+        "-q", "--quiet", dest="verbosity", action="store_const", const=-1,
+        help="Solo muestra el reporte, avisos y errores.",
+    )
     return parser
 
 
@@ -73,24 +109,20 @@ def file_sha256(path: str) -> str:
 
 def import_to_history(db_path: str, downloads: list) -> pd.DataFrame:
     """Import each (path, movements) download into the history and return the whole history."""
-    try:
-        conn = history.connect(db_path)
-    except history.HistoryError as e:
-        print(f"Error: {e}", file=sys.stderr)
-        sys.exit(1)
+    conn = history.connect(db_path)
     try:
         for path, frame in downloads:
             result = history.import_movements(
                 conn, frame, source_name=Path(path).name, sha256=file_sha256(path)
             )
-            print(
-                f"[Historial] {Path(path).name}: {result.new_count} movimientos nuevos, "
-                f"{result.existing_count} ya existían"
+            log.info(
+                "[Historial] %s: %d movimientos nuevos, %d ya existían",
+                Path(path).name, result.new_count, result.existing_count,
             )
         movements = history.load_movements(conn)
     finally:
         conn.close()
-    print(f"[Historial] {len(movements)} movimientos en total ({db_path})")
+    log.info("[Historial] %d movimientos en total (%s)", len(movements), db_path)
     return movements
 
 
@@ -104,14 +136,14 @@ def archive_inputs(paths: list, timestamp: str):
         )
         try:
             shutil.move(path, archive_path)
-            print(f"Archivo original archivado en: {archive_path}")
+            log.info("Archivo original archivado en: %s", archive_path)
         except OSError as e:
             # The analysis can still run without archiving
-            print(f"Aviso: no se pudo archivar '{path}': {e}", file=sys.stderr)
+            log.warning("no se pudo archivar '%s': %s", path, e)
 
 
 def print_report(results: list):
-    print("\n--- REPORTE DE ANÁLISIS ---")
+    print("--- REPORTE DE ANÁLISIS ---")
     if not results:
         print("No hay movimientos en el período analizado.")
     for result in results:
@@ -140,42 +172,47 @@ def write_and_open_report(html: str, timestamp: str) -> str:
     path = os.path.join(config.REPORTS_FOLDER, f"report_{timestamp}.html")
     with open(path, "w", encoding="utf-8") as f:
         f.write(html)
-    print(f"\nReporte HTML generado en: {path}")
+    log.info("Reporte HTML generado en: %s", path)
     try:
         webbrowser.open(Path(path).resolve().as_uri())
     except Exception as e:
-        print(f"No se pudo abrir el navegador automáticamente: {e}")
+        log.warning("no se pudo abrir el navegador automáticamente: %s", e)
     return path
 
 
-def main():
+def main(argv=None) -> int:
+    """Run the CLI and return the exit code: 0 if everything went well, 1 on an error."""
     arg_parser = build_arg_parser()
-    args = arg_parser.parse_args()
+    args = arg_parser.parse_args(argv)
     if not args.input_files and not args.db:
         arg_parser.error("indica al menos un archivo, o usa --db para analizar el historial")
+    setup_logging(args.verbosity)
 
-    print("=============================================")
-    print(f"====== Account Analysis Tool v{__version__} ======")
-    print("=============================================\n")
+    try:
+        run(args)
+    except (ParseError, history.HistoryError) as e:
+        log.error("%s", e)
+        return 1
+    return 0
+
+
+def run(args):
+    log.info("bankcheck v%s · análisis de movimientos", __version__)
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d_%H%M%S")
 
     # 1. Read every file before touching anything on disk
     downloads = []
     for path in args.input_files:
-        print(f"[Leyendo] {path}")
-        try:
-            parsed = parse_file(path)
-        except ParseError as e:
-            print(f"Error: {e}", file=sys.stderr)
-            sys.exit(1)
+        log.info("[Leyendo] %s", path)
+        parsed = parse_file(path)
         for warning in parsed.warnings:
-            print(f"Aviso: {warning}")
-        print(f"  {len(parsed.movements)} movimientos ({', '.join(parsed.sections)})")
+            log.warning("%s", warning)
+        log.info("  %d movimientos (%s)", len(parsed.movements), ", ".join(parsed.sections))
         downloads.append((path, parsed.movements))
 
     downloaded = merge_downloads([frame for _, frame in downloads])
     if len(downloads) > 1:
-        print(f"Total sin duplicados: {len(downloaded)} movimientos")
+        log.info("Total sin duplicados: %d movimientos", len(downloaded))
 
     # 2. Add the downloads to the history, before the originals are moved
     movements = import_to_history(args.db, downloads) if args.db else downloaded
@@ -185,18 +222,16 @@ def main():
         prefix = Path(args.output_prefix).stem if args.output_prefix else "cleaned-movements"
         clean_path = os.path.join(config.CLEAN_DATA_FOLDER, f"{prefix}_{timestamp}.xlsx")
         save_clean_file(downloaded, clean_path)
-        print(f"\nArchivo limpio guardado en: {clean_path}")
+        log.info("Archivo limpio guardado en: %s", clean_path)
         archive_inputs(args.input_files, timestamp)
 
     # 4. Analyze and report
     if args.start_date:
-        print(f"\nFiltro de fecha activo: analizando desde {args.start_date:%Y-%m-%d}")
+        log.info("Filtro de fecha activo: analizando desde %s", f"{args.start_date:%Y-%m-%d}")
     results = analyze(movements, start_date=args.start_date)
     print_report(results)
     write_and_open_report(render_report(results, args.start_date), timestamp)
 
-    print("\nProceso completo.")
-
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

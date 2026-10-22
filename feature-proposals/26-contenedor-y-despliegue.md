@@ -19,5 +19,11 @@
 - Opcional: GitHub Actions que corra los tests ([23](23-tests-y-ci.md)) y despliegue vía Tailscale si pasan.
 
 ## Criterios de aceptación
-- [ ] `docker compose up` levanta la app en un equipo limpio.
-- [ ] Desplegar una versión nueva es un solo comando.
+- [x] `docker compose up` levanta la app en un equipo limpio. *(probado en local con Docker Desktop)*
+- [ ] Desplegar una versión nueva es un solo comando. *(Fase 4, cuando exista el servidor)*
+
+## Estado (v0.5.0)
+- `pyproject.toml` + uv (v0.2.0), `Dockerfile`, `docker-compose.yml` y `.dockerignore` (v0.5.0).
+- Rutas con `BANKCHECK_DATA_DIR` (en el contenedor, `/data`).
+- El puerto se publica solo en `127.0.0.1` por defecto; en el servidor se expone con `tailscale serve` o con `BANKCHECK_BIND`.
+- El CI construye la imagen en cada push.

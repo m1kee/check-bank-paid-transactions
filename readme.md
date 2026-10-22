@@ -39,6 +39,8 @@ check-bank-paid-transactions/
 |-- tests/               Unit tests (synthetic data only)
 |-- feature-proposals/   Roadmap and feature ideas
 |-- CHANGELOG.md
+|-- Dockerfile         Web app image
+|-- docker-compose.yml Runs the web app with the data in ./data
 |
 |-- pre-process-data/    Put your raw .xls downloads here (git-ignored)
 |-- data/                Clean .xlsx files (git-ignored)
@@ -84,6 +86,7 @@ Arguments:
 * `-o, --output`: optional prefix for the clean `.xlsx` file (default `cleaned-movements`).
 * `-d, --start-date`: ignore movements before this date (`YYYY-MM-DD`).
 * `--db [RUTA]`: import the files into the history (default `data/bank.db`) and analyze the whole history instead of only these downloads. Without files, it just re-analyzes the history.
+* `-v, --verbose` / `-q, --quiet`: more detail (debugging) / only the report, warnings and errors.
 * `--version`: print the version.
 
 Examples:
@@ -100,6 +103,8 @@ The tool will:
 2. Save the clean movements to `data/<prefix>_<timestamp>.xlsx`.
 3. Move the raw files to `processed-archive/movements_<timestamp>.xls`.
 4. Print the analysis and open `reports/report_<timestamp>.html`.
+
+Progress messages go to stderr and the analysis to stdout, so `uv run bankcheck x.xls -q > analisis.txt` saves just the report. The exit code is `1` when a file or the history can't be read.
 
 ---
 
@@ -120,11 +125,23 @@ It uses the same history as `bankcheck --db`. Settings, through environment vari
 
 | Variable | Default | |
 |---|---|---|
-| `BANKCHECK_DB` | `data/bank.db` | SQLite history |
-| `BANKCHECK_UPLOADS_DIR` | `data/uploads` | Uploaded original files |
+| `BANKCHECK_DATA_DIR` | `data` | Base folder for the clean files, the history and the uploads (also used by the CLI) |
+| `BANKCHECK_DB` | `<data dir>/bank.db` | SQLite history |
+| `BANKCHECK_UPLOADS_DIR` | `<data dir>/uploads` | Uploaded original files |
 | `BANKCHECK_PASSWORD` | *(none)* | If set, every page asks for it (any user name) |
 
 Set a password whenever the app listens on anything other than `127.0.0.1`.
+
+### Docker
+
+```bash
+echo "BANKCHECK_PASSWORD=una-clave-larga" > .env   # required; .env is git-ignored
+mkdir -p data                                     # history and uploads, mounted at /data
+docker compose up -d --build                      # http://127.0.0.1:8000
+docker compose logs -f                            # see imports and requests
+```
+
+The port is published on `127.0.0.1` only. To reach it from other devices, set `BANKCHECK_BIND` in `.env` (e.g. the machine's Tailscale IP) or put `tailscale serve 8000` in front of it. `BANKCHECK_PORT` and `TZ` (default `America/Santiago`) can also go in `.env`. To update: `git pull && docker compose up -d --build`.
 
 ---
 

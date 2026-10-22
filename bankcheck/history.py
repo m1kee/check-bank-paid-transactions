@@ -7,6 +7,7 @@ analysis then runs over the whole history, so a purchase that is still unpaid
 keeps showing up after the bank closes the period and drops it from the view.
 """
 import datetime
+import logging
 import os
 import sqlite3
 from dataclasses import dataclass
@@ -15,6 +16,9 @@ import pandas as pd
 
 from bankcheck.dedup import add_fingerprints
 from bankcheck.parsers import COLUMNS
+
+
+log = logging.getLogger(__name__)
 
 
 class HistoryError(Exception):
@@ -85,8 +89,12 @@ def connect(path: str) -> sqlite3.Connection:
         conn = sqlite3.connect(path)
     except sqlite3.Error as e:
         raise HistoryError(f"No se pudo abrir el historial '{path}': {e}") from e
-    conn.execute("PRAGMA foreign_keys = ON")
-    migrate(conn)
+    try:
+        conn.execute("PRAGMA foreign_keys = ON")
+        migrate(conn)
+    except Exception:
+        conn.close()
+        raise
     return conn
 
 
@@ -103,6 +111,7 @@ def migrate(conn: sqlite3.Connection):
             f"(v{len(MIGRATIONS)}). Actualiza bankcheck."
         )
     for target, script in enumerate(MIGRATIONS[version:], start=version + 1):
+        log.debug("Migrando el historial al esquema v%d", target)
         # executescript ignores the connection's transaction handling, so the
         # script carries its own: a failed migration leaves the schema untouched
         conn.executescript(f"BEGIN;\n{script}\nPRAGMA user_version = {target};\nCOMMIT;")

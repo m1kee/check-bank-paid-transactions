@@ -13,5 +13,8 @@
 - Que los errores se propaguen como excepciones y `main.py` decida el código de salida.
 
 ## Criterios de aceptación
-- [ ] Todos los mensajes de consola están en un solo idioma.
-- [ ] Un error de lectura termina con exit code 1.
+- [x] Todos los mensajes de consola están en un solo idioma.
+- [x] Un error de lectura termina con exit code 1.
+
+## Estado (v0.5.0)
+Mensajes al usuario en español y código en inglés (regla en `AGENTS.md`). El avance va por `logging` a stderr con `-v`/`-q`; el reporte va a stdout. Cubierto por `tests/test_cli.py`.

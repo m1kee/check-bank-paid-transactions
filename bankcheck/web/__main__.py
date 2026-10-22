@@ -1,5 +1,6 @@
 """Run the web app: `uv run bankcheck-web` (or `python -m bankcheck.web`)."""
 import argparse
+import logging
 
 import uvicorn
 
@@ -8,8 +9,8 @@ from bankcheck import __version__
 
 def main():
     parser = argparse.ArgumentParser(
-        description="App web de bankcheck. Se configura con las variables de entorno BANKCHECK_DB, "
-        "BANKCHECK_UPLOADS_DIR y BANKCHECK_PASSWORD."
+        description="App web de bankcheck. Se configura con las variables de entorno BANKCHECK_DATA_DIR, "
+        "BANKCHECK_DB, BANKCHECK_UPLOADS_DIR y BANKCHECK_PASSWORD."
     )
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
@@ -21,6 +22,7 @@ def main():
     parser.add_argument("--reload", action="store_true", help="Reinicia al cambiar el código (desarrollo).")
     args = parser.parse_args()
 
+    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
     uvicorn.run(
         "bankcheck.web.app:create_app", factory=True, host=args.host, port=args.port, reload=args.reload
     )

@@ -6,6 +6,7 @@ table while filtering, so every page also works without JavaScript.
 """
 import datetime
 import hashlib
+import logging
 import os
 import re
 import secrets
@@ -25,6 +26,8 @@ from bankcheck.formatting import CURRENCY_NAMES, format_amount
 from bankcheck.parsers import ParseError, parse_file
 
 HERE = Path(__file__).parent
+
+log = logging.getLogger(__name__)
 
 # Rows shown at once in the movements table
 MOVEMENTS_PAGE_SIZE = 300
@@ -150,6 +153,7 @@ def create_app(settings: Settings = None) -> FastAPI:
                 saved.append((upload_file.filename, path, sha256))
             parsed = [parse_file(path) for _, path, _ in saved]
         except ParseError as e:
+            log.warning("Subida rechazada: %s", e)
             for _, path, _ in saved:
                 os.remove(path)
             return render(request, "upload.html", active="upload", imports=None,
@@ -158,6 +162,7 @@ def create_app(settings: Settings = None) -> FastAPI:
         imports = []
         for (name, path, sha256), parsed_file in zip(saved, parsed):
             result = history.import_movements(conn, parsed_file.movements, source_name=name, sha256=sha256)
+            log.info("Importado %s: %d nuevos, %d ya existían", path, result.new_count, result.existing_count)
             imports.append(FileImport(name, parsed_file.sections, result.new_count,
                                       result.existing_count, parsed_file.warnings))
         return render(request, "upload.html", active="upload", imports=imports, error=None)
