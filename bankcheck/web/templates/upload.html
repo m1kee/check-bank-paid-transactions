@@ -4,6 +4,7 @@
 <h1>Subir movimientos</h1>
 
 {% if error %}<div class="notice error">{{ error }}</div>{% endif %}
+{% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
 
 {% if imports %}
 <div class="notice">
@@ -15,6 +16,7 @@
         {% if item.warnings %}<ul class="warning">{% for w in item.warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
     </div>
     {% endfor %}
+    {% if notified is not none %}<p class="muted">{{ notified }} {{ 'notificación enviada' if notified == 1 else 'notificaciones enviadas' }}.</p>{% endif %}
     <p><a href="/pending">Ver pendientes →</a></p>
 </div>
 {% endif %}
@@ -26,4 +28,14 @@
     <button type="submit">Importar</button>
     <p class="muted">Puedes subir la misma descarga varias veces: los movimientos repetidos se cuentan una sola vez.</p>
 </form>
+
+<h2>Notificaciones</h2>
+{% if notifications %}
+<form class="card category-form" method="post" action="/notifications/test">
+    <p class="muted">Activadas (ntfy). Después de cada subida llega el resumen de pendientes, y una sola vez cada aviso de presupuesto o de cobro duplicado.</p>
+    <button type="submit" class="small secondary">Enviar una de prueba</button>
+</form>
+{% else %}
+<p class="muted">Apagadas. Para recibirlas en el celular, instala la app <strong>ntfy</strong>, suscríbete a un tema con un nombre largo y difícil de adivinar, y define <code>BANKCHECK_NTFY_URL=https://ntfy.sh/&lt;tema&gt;</code>.</p>
+{% endif %}
 {% endblock %}

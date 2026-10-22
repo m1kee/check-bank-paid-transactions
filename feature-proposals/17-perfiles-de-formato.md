@@ -18,5 +18,8 @@ parsers/
 - Más adelante, otro banco es solo un archivo nuevo en `parsers/`.
 
 ## Criterios de aceptación
-- [ ] El formato actual funciona como un parser más, sin cambios de comportamiento.
-- [ ] Agregar un formato nuevo no requiere tocar `analysis.py`.
+- [x] El formato actual funciona como un parser más, sin cambios de comportamiento.
+- [x] Agregar un formato nuevo no requiere tocar `analysis.py`.
+
+## Estado
+El formato de dólares se validó con una descarga real en v0.7.0. Era distinto al supuesto (sin cuotas, con País, monto en la columna 8) y bastó con cambiar su perfil en `config.py` (columnas, `defaults` para las columnas que no existen), sin tocar `analysis.py`.

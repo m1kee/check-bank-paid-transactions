@@ -88,6 +88,57 @@ def match_payments(
         else:
             pairs.append((purchase_idx, pay_idx))
 
+    return _result(purchases, payments, pairs, orphan_idx)
+
+
+def match_statement_payments(
+    purchases: pd.DataFrame,
+    payments: pd.DataFrame,
+    tolerance: float = config.STATEMENT_MATCH_TOLERANCE,
+    early_tolerance_days: int = config.PAYMENT_EARLY_TOLERANCE_DAYS,
+) -> MatchResult:
+    """
+    For cards paid by statement balance (each payment is the whole billed
+    amount): a payment covers the run of consecutive unpaid purchases, in date
+    order and made before it, that adds up to it. The earliest such run wins;
+    purchases before it (e.g. from a cycle only partly in the history) stay unpaid.
+    A payment with no exact run (a partial payment) is left as an orphan.
+    """
+    tolerance_days = pd.Timedelta(days=early_tolerance_days)
+    open_purchases = list(purchases.sort_values("Date", kind="stable").iterrows())
+
+    pairs = []
+    orphan_idx = []
+    for pay_idx, payment in payments.sort_values("Date", kind="stable").iterrows():
+        candidates = [(idx, row) for idx, row in open_purchases if row["Date"] <= payment["Date"] + tolerance_days]
+        amounts = [float(row["Amount"]) for _, row in candidates]
+        target = float(payment["Amount"])
+        # With refunds (negative amounts) a run can come back down, so it can't stop early
+        can_stop_early = all(a >= 0 for a in amounts)
+        run = None
+        for start in range(len(amounts)):
+            total = 0.0
+            for end in range(start, len(amounts)):
+                total += amounts[end]
+                if abs(total - target) <= tolerance:
+                    run = (start, end)
+                    break
+                if can_stop_early and total > target + tolerance:
+                    break
+            if run:
+                break
+        if run is None:
+            orphan_idx.append(pay_idx)
+            continue
+        covered = {idx for idx, _ in candidates[run[0]:run[1] + 1]}
+        pairs.extend((idx, pay_idx) for idx in sorted(covered, key=lambda i: purchases.at[i, "Date"]))
+        open_purchases = [(idx, row) for idx, row in open_purchases if idx not in covered]
+
+    return _result(purchases, payments, pairs, orphan_idx)
+
+
+def _result(purchases, payments, pairs: list, orphan_idx: list) -> MatchResult:
+    """Build the MatchResult from (purchase index, payment index) pairs."""
     matched_purchases = purchases.loc[[p for p, _ in pairs]]
     matched_payments = payments.loc[[q for _, q in pairs]]
     matches = matched_purchases.assign(

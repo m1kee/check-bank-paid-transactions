@@ -3,7 +3,8 @@ from dataclasses import dataclass, field
 
 import pandas as pd
 
-from bankcheck.matching import match_payments, split_movements
+from bankcheck import config
+from bankcheck.matching import match_payments, match_statement_payments, split_movements
 from bankcheck.reconcile import IGNORED, find_group_suggestions
 
 
@@ -84,7 +85,9 @@ def analyze(
         open_purchases, open_payments, resolved, ignored_payments = _apply_resolutions(
             purchases, payments, resolutions, by_id
         )
-        result = match_payments(open_purchases, open_payments)
+        by_statement = config.MATCHING_MODE.get(currency) == "statement"
+        matcher = match_statement_payments if by_statement else match_payments
+        result = matcher(open_purchases, open_payments)
         counted_purchases = purchases[~purchases.index.isin(resolved[resolved["Status"] == IGNORED].index)]
         results.append(
             CurrencyAnalysis(
@@ -97,7 +100,10 @@ def analyze(
                 total_purchases=counted_purchases["Amount"].sum(),
                 resolved=resolved,
                 ignored_payments=ignored_payments,
-                suggestions=find_group_suggestions(result.unpaid, result.orphan_payments, dismissed=dismissed),
+                # A statement payment covers many purchases: small groups don't apply
+                suggestions=[] if by_statement else find_group_suggestions(
+                    result.unpaid, result.orphan_payments, dismissed=dismissed
+                ),
             )
         )
     return results

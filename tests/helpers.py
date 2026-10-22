@@ -36,6 +36,34 @@ def raw_section(rows, title="Movimientos Nacionales", header=None):
     return out
 
 
+USD_HEADER = {1: "Fecha", 2: "Tipo de Tarjeta", 4: "Descripción", 6: "País", 7: "Ciudad", 8: "Monto (USD)"}
+
+
+def raw_usd_section(rows, title="Movimientos Internacionales"):
+    """
+    The dollars section as the bank exports it: no installment columns, a
+    country and the amount on column 8. Each data row is
+    (date "DD/MM/YYYY", description, amount[, country[, city]]).
+    """
+    title_row = _blank()
+    title_row[1] = title
+    header_row = _blank()
+    for col, label in USD_HEADER.items():
+        header_row[col] = label
+
+    out = [title_row, header_row]
+    for date, description, amount, *rest in rows:
+        row = _blank()
+        row[1] = date
+        row[2] = "Titular********0000"
+        row[4] = description
+        row[6] = rest[0] if rest else "ESTADOS UNIDOS"
+        row[7] = rest[1] if len(rest) > 1 else "800-000-0000"
+        row[8] = amount
+        out.append(row)
+    return out
+
+
 def raw_export(*sections, leading_rows=16):
     """A raw export (as read with header=None): metadata rows followed by the sections."""
     rows = [_blank() for _ in range(leading_rows)]

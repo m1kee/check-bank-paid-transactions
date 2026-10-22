@@ -36,6 +36,7 @@ class FormatProfile:
     section_title: str
     header_labels: dict
     columns: dict
+    defaults: dict = field(default_factory=dict)
     verified: bool = True
 
 
@@ -170,6 +171,8 @@ def _read_section(raw: pd.DataFrame, profile: FormatProfile, header_row: int, en
     frame = pd.DataFrame({name: rows.iloc[:, col].values for name, col in profile.columns.items()})
     frame["Date"] = pd.to_datetime(pd.Series(dates[:count], dtype="object"))
     frame.insert(0, "Currency", profile.currency)
+    for name, value in profile.defaults.items():
+        frame[name] = value
 
     for name in ("Card Type", "Description", "City", "Installments", "Installment Details"):
         frame[name] = _clean_text(frame[name])

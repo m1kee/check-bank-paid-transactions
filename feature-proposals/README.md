@@ -28,7 +28,7 @@ Lógica que después solo hay que mostrar en la web. Se prueba con la CLI.
 | 29 | [Separar el núcleo de la CLI](29-nucleo-reutilizable.md) | M | ✅ v0.2.0 |
 | 23 | [Más tests y CI](23-tests-y-ci.md) | M | ✅ v0.2.0 |
 | 07 | [Detectar el encabezado automáticamente](07-deteccion-automatica-encabezado.md) | S | ✅ v0.2.0 |
-| 17 | [Perfiles de formato (pesos, dólares)](17-perfiles-de-formato.md) | M–L | 🟡 v0.2.0: falta validar el formato USD con un archivo real |
+| 17 | [Perfiles de formato (pesos, dólares)](17-perfiles-de-formato.md) | M–L | ✅ v0.7.0 (formato USD validado con un archivo real) |
 | 10 | [Deduplicación entre descargas](10-deduplicacion-entre-descargas.md) | S–M | ✅ v0.2.0 (falta usarla en el historial, 09) |
 | 01 | [Matching que respeta fechas](01-matching-con-fechas.md) | M | ✅ v0.2.0 |
 
@@ -49,7 +49,7 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 |---|---|---|
 | 03 | [Marcar pagado / ignorar](03-conciliacion-manual.md) | M — ✅ v0.6.0 |
 | 04 | [Ver qué pago cubrió cada compra](04-detalle-de-matches.md) | S — ✅ v0.6.0 |
-| 18 | [Movimientos en dólares](18-multi-moneda.md) | M |
+| 18 | [Movimientos en dólares](18-multi-moneda.md) | M — ✅ v0.7.0 |
 | 08 | [Subir varios archivos a la vez](08-procesamiento-por-lotes.md) | S — ✅ v0.6.0 |
 | 11 | [Pagos que cubren varias compras](11-pagos-agrupados.md) | M — ✅ v0.6.0 |
 
@@ -58,7 +58,7 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 | # | Feature | Esfuerzo |
 |---|---|---|
 | 13 | [Catalogar gastos (categorías y reglas)](13-categorizacion-de-gastos.md) | M — ✅ v0.6.0 |
-| 30 | [Presupuestos por categoría](30-presupuestos.md) | S–M — ✅ v0.6.0 (falta la alerta, ver 20) |
+| 30 | [Presupuestos por categoría](30-presupuestos.md) | S–M — ✅ v0.6.0, alertas en v0.7.0 |
 | 14 | [Dashboard con gráficos](14-dashboard-con-graficos.md) | M — ✅ v0.6.0 |
 | 12 | [Seguimiento de cuotas](12-seguimiento-de-cuotas.md) | M — ✅ v0.6.0 |
 | 15 | [Detectar suscripciones](15-deteccion-suscripciones.md) | M — ✅ v0.6.0 |
@@ -69,10 +69,10 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 | # | Feature | Esfuerzo |
 |---|---|---|
 | 19 | [Copiar / exportar pendientes](19-exportar-pendientes.md) | XS — ✅ v0.6.0 |
-| 20 | [Notificaciones](20-notificaciones.md) | M |
-| 25 | [Privacidad: retención y respaldos cifrados](25-privacidad-retencion-cifrado.md) | S–M |
+| 20 | [Notificaciones](20-notificaciones.md) | M — ✅ v0.7.0 (ntfy) |
+| 25 | [Privacidad: retención y respaldos cifrados](25-privacidad-retencion-cifrado.md) | S–M — ⏸ pospuesta: al principio, respaldo en el mismo servidor (ver 28); más adelante, el NAS |
 | 06 | [Flags de la CLI](06-flags-cli.md) | S — ✅ v0.6.0 |
-| 21 | [Procesar al descargar (sin abrir la web)](21-automatizacion-carpeta.md) | S–M |
+| 21 | [Procesar al descargar (sin abrir la web)](21-automatizacion-carpeta.md) | S–M — ✖ descartada: los archivos siempre se suben por la web |
 
 ## Dependencias clave
 

@@ -7,7 +7,7 @@ import unittest
 from unittest import mock
 
 from bankcheck import cli
-from tests.helpers import raw_export, raw_section
+from tests.helpers import raw_export, raw_section, raw_usd_section
 
 PAY = "PAGO PESOS TEF PAGO NORMAL"
 
@@ -130,7 +130,7 @@ class FolderTests(CliTestCase):
         self.assertEqual(os.listdir("pre-process-data"), [])
 
     def test_pesos_and_dollars_in_one_report(self):
-        rows_usd = raw_section([("05/09/2026", "NETFLIX", 15.99)], title="Movimientos Internacionales")
+        rows_usd = raw_usd_section([("05/09/2026", "NETFLIX", 15.99)])
         raw_export(rows_usd).to_excel("usd.xlsx", header=False, index=False)
         clp = self.write_download("clp.xlsx", [("02/09/2026", "UBER", 4500)])
         _, out, _ = self.run_cli(clp, "usd.xlsx", "--no-open")

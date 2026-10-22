@@ -3,6 +3,8 @@
 #   BANKCHECK_BIND=127.0.0.1      where the port is published (default: only this machine)
 #   BANKCHECK_PORT=8000
 #   TZ=America/Santiago           so "today" (the age of a pending purchase) is local
+#   BANKCHECK_NTFY_URL=https://ntfy.sh/<long-secret-topic>   push notifications (optional)
+#   BANKCHECK_NOTIFY_DETAILS=1    include merchants in notifications (optional)
 services:
   bankcheck:
     build: .
@@ -13,6 +15,9 @@ services:
     environment:
       BANKCHECK_PASSWORD: ${BANKCHECK_PASSWORD:?define BANKCHECK_PASSWORD en el archivo .env}
       TZ: ${TZ:-America/Santiago}
+      BANKCHECK_NTFY_URL: ${BANKCHECK_NTFY_URL:-}
+      BANKCHECK_NTFY_TOKEN: ${BANKCHECK_NTFY_TOKEN:-}
+      BANKCHECK_NOTIFY_DETAILS: ${BANKCHECK_NOTIFY_DETAILS:-}
     volumes:
       # History (bank.db) and uploaded originals; create it before the first start
       - ./data:/data

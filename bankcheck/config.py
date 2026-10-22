@@ -45,21 +45,24 @@ FORMAT_PROFILES = [
         "verified": True,
     },
     {
-        # Assumed to share the national layout; not yet checked against a real file.
+        # Checked against a real download (10/2026): no installment columns (every
+        # international purchase is a single charge), a "País" column, and the
+        # "Ciudad" column holds phone numbers or domains, so the country is used
+        # as the movement's city.
         "name": "Movimientos Internacionales",
         "currency": "USD",
         "section_title": "Movimientos Internacionales",
-        "header_labels": {1: "Fecha", 2: "Tipo de Tarjeta", 4: "Descripción", 6: "Ciudad", 7: "Cuotas"},
+        "header_labels": {1: "Fecha", 2: "Tipo de Tarjeta", 4: "Descripción", 6: "País", 7: "Ciudad", 8: "Monto (USD)"},
         "columns": {
             "Date": 1,
             "Card Type": 2,
             "Description": 4,
             "City": 6,
-            "Installments": 7,
-            "Installment Details": 8,
-            "Amount": 10,
+            "Amount": 8,
         },
-        "verified": False,
+        # Values for the columns this format doesn't have
+        "defaults": {"Installments": "01/01", "Installment Details": ""},
+        "verified": True,
     },
 ]
 
@@ -69,6 +72,7 @@ FORMAT_PROFILES = [
 PAYMENT_TERMS = [
     "PAGO PESOS TAR",
     "PAGO PESOS TEF",
+    "PAGO DOLAR",
     "PAGO ONLINE",
     "MERCADOPAGO",
 ]
@@ -91,6 +95,16 @@ PAYMENT_EARLY_TOLERANCE_DAYS = 0
 
 # Folder the CLI reads when it gets no files (proposal 08)
 INPUT_FOLDER = "pre-process-data"
+
+# How each currency's card is paid:
+# - "per_purchase": each purchase is paid on its own (1-to-1 by amount, plus
+#   grouped-payment suggestions);
+# - "statement": each payment is the whole billed balance, so it covers a run
+#   of consecutive purchases that adds up to it.
+MATCHING_MODE = {"CLP": "per_purchase", "USD": "statement"}
+
+# Allowed difference between a statement payment and its purchases (rounding)
+STATEMENT_MATCH_TOLERANCE = 0.01
 
 # --- Grouped payments (proposal 11) ---
 

@@ -1,8 +1,13 @@
-"""Web pages for proposals 03, 04, 11, 12, 13, 14, 15, 16, 19 and 30."""
+"""Web pages for proposals 03, 04, 11, 12, 13, 14, 15, 16, 19, 20 and 30."""
 import unittest
+
+from fastapi.testclient import TestClient
 
 from bankcheck import categories as cat
 from bankcheck import history
+from bankcheck.notify import NtfySettings
+from bankcheck.web.app import create_app
+from tests.test_notify import FakeNtfy
 from tests.test_web import PAY, WebTestCase, unpaid_part, xlsx
 
 
@@ -176,6 +181,38 @@ class InstallmentsAndSubscriptionsTests(FeatureTestCase):
     def test_empty_pages(self):
         self.assertIn("No hay compras en cuotas", self.client.get("/installments").text)
         self.assertIn("No se detectaron", self.client.get("/subscriptions").text)
+
+
+class NotificationPagesTests(FeatureTestCase):
+    def setUp(self):
+        self.ntfy = FakeNtfy()
+        super().setUp()
+
+    def tearDown(self):
+        super().tearDown()
+        self.ntfy.close()
+
+    def enable(self):
+        self.settings.ntfy = NtfySettings(url=self.ntfy.url)
+        self.client.close()
+        self.client = TestClient(create_app(self.settings))
+
+    def test_off_explains_how_to_turn_them_on(self):
+        page = self.client.get("/upload").text
+        self.assertIn("BANKCHECK_NTFY_URL", page)
+        self.assertIn("están apagadas", self.client.post("/notifications/test").text)
+        self.assertEqual(self.ntfy.received, [])
+
+    def test_upload_sends_the_summary(self):
+        self.enable()
+        response = self.upload(("oct.xlsx", xlsx([("01/10/2026", "UBER", 4500)])))
+        self.assertIn("1 notificación enviada", response.text)
+        self.assertEqual(self.ntfy.received[0]["title"], "🧾 Compras sin pagar")
+
+    def test_test_button(self):
+        self.enable()
+        self.assertIn("Notificación de prueba enviada", self.client.post("/notifications/test").text)
+        self.assertEqual(len(self.ntfy.received), 1)
 
 
 if __name__ == "__main__":

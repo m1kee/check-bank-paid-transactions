@@ -31,6 +31,7 @@ from bankcheck.export import pending_csv, pending_text
 from bankcheck.formatting import CURRENCY_NAMES, format_amount
 from bankcheck.insights import build_insights, latest_month, month_name, pending_by_age
 from bankcheck.installments import installment_plans, projection, summary
+from bankcheck.notify import NtfySettings, notify_after_import, sample_message, send
 from bankcheck.parsers import ParseError, parse_file
 from bankcheck.recurring import detect_subscriptions
 from bankcheck.text import suggest_pattern
@@ -49,6 +50,7 @@ class Settings:
     uploads_dir: str = config.UPLOADS_FOLDER
     # When set, every page asks for it (HTTP Basic, any user name)
     password: str = None
+    ntfy: NtfySettings = field(default_factory=NtfySettings)
 
     @classmethod
     def from_env(cls) -> "Settings":
@@ -56,6 +58,7 @@ class Settings:
             db_path=os.environ.get("BANKCHECK_DB", config.DB_PATH),
             uploads_dir=os.environ.get("BANKCHECK_UPLOADS_DIR", config.UPLOADS_FOLDER),
             password=os.environ.get("BANKCHECK_PASSWORD") or None,
+            ntfy=NtfySettings.from_env(),
         )
 
 
@@ -262,16 +265,27 @@ def create_app(settings: Settings = None) -> FastAPI:
 
     # --- Upload -----------------------------------------------------------------------
 
+    def upload_page(request: Request, imports=None, error=None, notified=None, notice=None):
+        return render(request, "upload.html", active="upload", imports=imports, error=error,
+                      notifications=settings.ntfy.enabled, notified=notified, notice=notice)
+
     @app.get("/upload")
     def upload_form(request: Request):
-        return render(request, "upload.html", active="upload", imports=None, error=None)
+        return upload_page(request)
+
+    @app.post("/notifications/test")
+    def notification_test(request: Request):
+        if not settings.ntfy.enabled:
+            return upload_page(request, error="Las notificaciones están apagadas: define BANKCHECK_NTFY_URL.")
+        if send(settings.ntfy, sample_message()):
+            return upload_page(request, notice="Notificación de prueba enviada. Revisa la app de ntfy.")
+        return upload_page(request, error="No se pudo enviar la notificación. Revisa BANKCHECK_NTFY_URL y el log.")
 
     @app.post("/upload")
     def upload(request: Request, files: list[UploadFile] = File(...), conn=Depends(get_db)):
         files = [f for f in files if f.filename]
         if not files:
-            return render(request, "upload.html", active="upload", imports=None,
-                          error="Elige al menos un archivo.")
+            return upload_page(request, error="Elige al menos un archivo.")
 
         # Save and read every file before importing any, like the CLI
         os.makedirs(settings.uploads_dir, exist_ok=True)
@@ -292,8 +306,7 @@ def create_app(settings: Settings = None) -> FastAPI:
             log.warning("Subida rechazada: %s", e)
             for _, path, _ in saved:
                 os.remove(path)
-            return render(request, "upload.html", active="upload", imports=None,
-                          error=f"No se importó nada. {e}")
+            return upload_page(request, error=f"No se importó nada. {e}")
 
         imports = []
         for (name, path, sha256), parsed_file in zip(saved, parsed):
@@ -301,7 +314,8 @@ def create_app(settings: Settings = None) -> FastAPI:
             log.info("Importado %s: %d nuevos, %d ya existían", path, result.new_count, result.existing_count)
             imports.append(FileImport(name, parsed_file.sections, result.new_count,
                                       result.existing_count, parsed_file.warnings))
-        return render(request, "upload.html", active="upload", imports=imports, error=None)
+        notified = notify_after_import(conn, settings.ntfy) if settings.ntfy.enabled else None
+        return upload_page(request, imports=imports, notified=notified)
 
     # --- Movements and their categories (13) -------------------------------------------
 

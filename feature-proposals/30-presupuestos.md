@@ -20,3 +20,6 @@ Saber en qué se gastó ([13](13-categorizacion-de-gastos.md)) sirve, pero ayuda
 
 ## Estado (v0.6.0)
 Presupuestos en pesos, editables en Categorías. Pendiente: la alerta al 80 % y 100 % (necesita [20](20-notificaciones.md)) y convertir los gastos en dólares.
+
+## Estado (v0.7.0)
+Las alertas al 80 % y 100 % llegaron en v0.7.0 por ntfy ([20](20-notificaciones.md)).
