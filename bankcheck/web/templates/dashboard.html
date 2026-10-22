@@ -17,7 +17,7 @@
     <noscript><button class="btn secondary" type="submit">Ver</button></noscript>
 </form>
 {% endif %}
-<a class="btn" href="/upload">{{ icon("upload") }}Subir descarga</a>
+<a class="btn" href="/upload">{{ icon("upload") }}Subir movimientos</a>
 {% endblock %}
 
 {% block content %}
@@ -25,8 +25,8 @@
 <div class="card empty-state">
     <div class="row-icon">{{ icon("upload") }}</div>
     <h3>Aún no hay movimientos</h3>
-    <p>Sube la descarga de movimientos del banco (pesos o dólares) para ver tu resumen.</p>
-    <a class="btn" href="/upload">{{ icon("upload") }}Subir descarga</a>
+    <p>Sube los movimientos no facturados del banco (pesos o dólares) para ver tu resumen.</p>
+    <a class="btn" href="/upload">{{ icon("upload") }}Subir movimientos</a>
 </div>
 {% else %}
 

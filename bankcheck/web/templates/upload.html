@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% from "_icons.html" import icon %}
-{% block title %}Subir{% endblock %}
+{% block title %}Subir movimientos{% endblock %}
 {% block heading %}Subir movimientos{% endblock %}
 {% block subheading %}La descarga «Saldos y Movimientos No Facturados» del banco, en pesos o dólares{% endblock %}
 {% block content %}
@@ -28,11 +28,12 @@
 <div class="grid">
     <section class="card span-7">
         <form method="post" action="/upload" enctype="multipart/form-data">
-            <label class="dropzone">
+            <label class="dropzone" data-dropzone>
                 <span class="row-icon">{{ icon("upload") }}</span>
-                <strong>Elige uno o varios archivos .xls / .xlsx</strong>
+                <strong>Arrastra aquí los archivos .xls / .xlsx o haz clic para elegirlos</strong>
                 <span class="muted small">Puedes subir la misma descarga varias veces: los movimientos repetidos se cuentan una sola vez.</span>
                 <input type="file" name="files" accept=".xls,.xlsx" multiple required>
+                <span class="dropzone-files" data-dropzone-files hidden></span>
             </label>
             <div class="mt" style="display:flex;justify-content:flex-end"><button type="submit" class="btn">{{ icon("upload") }}Importar</button></div>
         </form>
@@ -74,4 +75,5 @@
         {% endif %}
     </div>
 </section>
+<script src="{{ url_for('static', path='upload.js') }}" defer></script>
 {% endblock %}
