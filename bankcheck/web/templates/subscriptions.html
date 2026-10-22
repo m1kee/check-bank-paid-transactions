@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}Suscripciones{% endblock %}
+{% block content %}
+<h1>Suscripciones detectadas</h1>
+<p class="muted">Comercios que cobran cada mes por un monto parecido, durante al menos 3 meses.</p>
+
+{% if not subscriptions %}
+<div class="notice">No se detectaron cobros recurrentes. Hacen falta al menos 3 meses de historial.</div>
+{% else %}
+<div class="cards">
+    {% for currency, total in totals.items() %}
+    <div class="card"><h3>Al mes{% if totals | length > 1 %} ({{ currency }}){% endif %}</h3><p class="value">{{ total | money(currency) }}</p></div>
+    <div class="card"><h3>Al año{% if totals | length > 1 %} ({{ currency }}){% endif %}</h3><p class="value">{{ (total * 12) | money(currency) }}</p></div>
+    {% endfor %}
+</div>
+
+<ul class="list">
+    {% for s in subscriptions %}
+    <li>
+        <div>
+            <div class="desc">{{ s.description }}</div>
+            <div class="meta">
+                {{ s.charges }} cobros desde {{ s.first_date | date }} · último {{ s.last_date | date }} · próximo ~{{ s.next_charge | date }}
+                {% if s.price_increased %}<br><span class="tag danger">▲ Subió {{ s.price_change | money(s.currency) }}</span> (antes {{ s.previous_amount | money(s.currency) }}){% endif %}
+            </div>
+        </div>
+        <div class="amount">{{ s.amount | money(s.currency) }}<div class="meta">{{ s.annual_cost | money(s.currency) }}/año</div></div>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endblock %}

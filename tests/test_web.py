@@ -15,6 +15,11 @@ PAY = "PAGO PESOS TEF PAGO NORMAL"
 XLSX = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
 
+def unpaid_part(page: str) -> str:
+    """The pending list, without the "paid purchases" detail below it (04)."""
+    return page.split("Compras pagadas y su pago")[0]
+
+
 def xlsx(rows) -> bytes:
     """A synthetic bank download, as the bytes of an .xlsx file."""
     buffer = io.BytesIO()
@@ -97,9 +102,9 @@ class UploadTests(WebTestCase):
 
 
 class PendingTests(WebTestCase):
-    def test_home_redirects_to_pending(self):
+    def test_home_redirects_to_the_dashboard(self):
         response = self.client.get("/", follow_redirects=False)
-        self.assertEqual(response.headers["location"], "/pending")
+        self.assertEqual(response.headers["location"], "/dashboard")
 
     def test_empty_history_invites_to_upload(self):
         response = self.client.get("/pending")
@@ -111,16 +116,17 @@ class PendingTests(WebTestCase):
         self.upload(("oct.xlsx", xlsx([("03/10/2026", PAY, -23450)])))
 
         response = self.client.get("/pending")
-        self.assertIn("UBER", response.text)
+        self.assertIn("UBER", unpaid_part(response.text))
         self.assertIn("$4.500", response.text)
-        self.assertNotIn("LIDER", response.text)
+        self.assertNotIn("LIDER", unpaid_part(response.text))
+        self.assertIn("LIDER", response.text)  # with the payment that covered it
 
     def test_matches_the_cli_analysis(self):
         self.upload(
             ("sep.xlsx", xlsx([("02/09/2026", "UBER", 4500), ("05/09/2026", "COPEC", 30000), ("06/09/2026", PAY, -4500)]))
         )
         [result] = analyze(self.load_history())
-        page = self.client.get("/pending").text
+        page = unpaid_part(self.client.get("/pending").text)
         for description in result.unpaid["Description"]:
             self.assertIn(description, page)
         self.assertNotIn("UBER", page)

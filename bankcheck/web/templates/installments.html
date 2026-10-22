@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Cuotas{% endblock %}
+{% block content %}
+<h1>Cuotas vigentes</h1>
+
+{% if not plans %}
+<div class="notice">No hay compras en cuotas pendientes en el historial.</div>
+{% else %}
+<div class="cards">
+    {% for currency, (monthly, debt) in summary.items() %}
+    <div class="card"><h3>Compromiso mensual{% if summary | length > 1 %} ({{ currency }}){% endif %}</h3><p class="value">{{ monthly | money(currency) }}</p></div>
+    <div class="card"><h3>Deuda total en cuotas{% if summary | length > 1 %} ({{ currency }}){% endif %}</h3><p class="value">{{ debt | money(currency) }}</p></div>
+    {% endfor %}
+</div>
+
+{% for currency, chart in projections.items() %}
+<h2>Cuotas por mes, próximos 12 meses{% if projections | length > 1 %} ({{ currency }}){% endif %}</h2>
+<div class="card">{{ chart }}</div>
+{% endfor %}
+
+<h2>Detalle</h2>
+<div class="table-wrap">
+    <table>
+        <thead><tr><th>Compra</th><th>Cuota</th><th class="num">Valor cuota</th><th class="num">Restantes</th><th class="num">Deuda restante</th><th>Termina</th></tr></thead>
+        <tbody>
+            {% for p in plans %}
+            <tr>
+                <td class="desc">{{ p['Description'] }}</td>
+                <td>{{ '%02d/%02d' | format(p['Current'], p['Total']) }}</td>
+                <td class="num">{{ p['Amount'] | money(p['Currency']) }}</td>
+                <td class="num">{{ p['Remaining'] }}</td>
+                <td class="num">{{ p['Remaining Debt'] | money(p['Currency']) }}</td>
+                <td>{{ p['Ends'] | month_name(short=True) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+<p class="muted">Se calcula con la última cuota vista de cada compra. Si dejas de subir descargas, las cuotas pagadas después no se descuentan.</p>
+{% endif %}
+{% endblock %}

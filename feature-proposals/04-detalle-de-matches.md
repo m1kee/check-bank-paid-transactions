@@ -21,5 +21,8 @@ Es la diferencia entre confiar ciegamente en el número final y poder **auditarl
 - `analysis.py` (guardar los pares al emparejar), `html_reporter.py` (sección `<details>`).
 
 ## Criterios de aceptación
-- [ ] Cada compra pagada aparece con el pago que la cubrió.
-- [ ] Los pagos huérfanos aparecen listados.
+- [x] Cada compra pagada aparece con el pago que la cubrió.
+- [x] Los pagos huérfanos aparecen listados.
+
+## Estado (v0.6.0)
+En la web (Pendientes) y en el reporte HTML, colapsado, con los días que tardó cada pago.

@@ -19,4 +19,7 @@ En el reporte HTML:
 En la CLI: `--export pendientes.csv`.
 
 ## Criterios de aceptación
-- [ ] El texto copiado tiene formato de pesos chilenos y el total.
+- [x] El texto copiado tiene formato de pesos chilenos y el total.
+
+## Estado (v0.6.0)
+En la web (Pendientes), en el reporte HTML (botones) y en la CLI (`--export`).

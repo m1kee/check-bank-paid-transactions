@@ -188,3 +188,21 @@ def _read_section(raw: pd.DataFrame, profile: FormatProfile, header_row: int, en
         frame["Amount"] = amounts.round(2)
 
     return frame[COLUMNS], warnings
+
+
+def read_clean_file(path: str) -> pd.DataFrame:
+    """Read back a clean .xlsx saved by the CLI (data/cleaned-movements_*.xlsx)."""
+    try:
+        df = pd.read_excel(path)
+    except FileNotFoundError:
+        raise ParseError(f"No existe el archivo: '{path}'")
+    except Exception as e:
+        raise ParseError(f"No se pudo leer '{path}': {e}") from e
+    missing = [c for c in COLUMNS if c not in df.columns]
+    if missing:
+        raise ParseError(f"'{path}' no es un archivo limpio de bankcheck: faltan las columnas {', '.join(missing)}.")
+    df = df[COLUMNS].copy()
+    df["Date"] = pd.to_datetime(df["Date"], dayfirst=True)
+    for name in ("Card Type", "Description", "City", "Installments", "Installment Details"):
+        df[name] = _clean_text(df[name])
+    return df

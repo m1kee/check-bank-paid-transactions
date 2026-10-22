@@ -1,0 +1,33 @@
+<tr id="movement-{{ row['Id'] }}">
+    <td class="c-date">{{ row['Date'] | date }}</td>
+    <td class="desc c-desc">{{ row['Description'] }}</td>
+    <td class="c-cat">
+        {% if row['Category'] == payments_category %}
+        <span class="muted">{{ payments_category }}</span>
+        {% else %}
+        <form method="post" action="/movements/{{ row['Id'] }}/category"
+              hx-post="/movements/{{ row['Id'] }}/category" hx-trigger="change" hx-target="#movement-{{ row['Id'] }}" hx-swap="outerHTML">
+            <input type="hidden" name="next" value="{{ back_url }}">
+            <select name="category_id" aria-label="Categoría de {{ row['Description'] }}">
+                <option value="">{{ 'Automática' if row['Id'] in overrides else row['Category'] }}</option>
+                {% for c in categories %}
+                <option value="{{ c.id }}" {{ 'selected' if overrides.get(row['Id']) == c.name }}>{{ c.name }}</option>
+                {% endfor %}
+            </select>
+            <noscript><button type="submit" class="small">Guardar</button></noscript>
+        </form>
+        {% if offer_rule %}
+        <form class="learn" hx-post="/rules" hx-target="this" hx-swap="innerHTML">
+            <span class="muted">¿Siempre que diga</span>
+            <input type="text" name="pattern" value="{{ row['Description'] | suggest_pattern }}" aria-label="Texto de la regla">
+            <span class="muted">→ {{ row['Category'] }}?</span>
+            <input type="hidden" name="category_id" value="{{ (categories | selectattr('name', 'equalto', row['Category']) | first).id }}">
+            <button type="submit" class="small">Crear regla</button>
+        </form>
+        {% endif %}
+        {% endif %}
+    </td>
+    <td class="c-extra">{{ row['Installments'] }}</td>
+    <td class="c-extra">{{ row['City'] }}</td>
+    <td class="num c-amount">{{ row['Amount'] | money(row['Currency']) }}</td>
+</tr>

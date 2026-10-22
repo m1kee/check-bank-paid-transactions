@@ -29,5 +29,8 @@ CATEGORY_RULES = {
 - Usar un LLM (ej. Claude) para **sugerir** reglas a partir de las descripciones de "Otros", y que tú las apruebes. Ojo: eso implica enviar descripciones de compras a un servicio externo.
 
 ## Criterios de aceptación
-- [ ] Cada movimiento tiene una categoría.
-- [ ] El reporte muestra totales por categoría.
+- [x] Cada movimiento tiene una categoría.
+- [x] El reporte muestra totales por categoría.
+
+## Estado (v0.6.0)
+Reglas y categorías en SQLite, partiendo de `config.DEFAULT_CATEGORIES`. Gana la regla más larga. Quedan pendientes el color e ícono por categoría (los gráficos usan un color por serie, no por categoría) y las sugerencias con un LLM.

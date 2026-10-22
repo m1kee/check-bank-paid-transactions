@@ -6,6 +6,31 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-10-21
+
+Fases 2 y 3 del roadmap, más 06 y 19 de la Fase 4.
+
+### Added
+- Conciliación manual (03): marcar una compra como pagada o ignorada con un motivo, o ignorar un pago, desde Pendientes. Se guarda en el historial, se puede deshacer y aparece en "Resueltas a mano".
+- Detalle de qué pago cubrió cada compra, con los días que tardó, en la web y en el reporte (04).
+- Sugerencias de pagos agrupados (11): un pago sin compra que equivale a la suma de 2 a 4 compras pendientes anteriores se sugiere; si hay varias combinaciones se muestran todas. Nada se aplica solo: se acepta o se descarta.
+- Categorías (13): reglas editables (gana la más larga; sin importar mayúsculas ni tildes), con las de `config.DEFAULT_CATEGORIES` como punto de partida. En Movimientos se cambia la categoría de cada fila y la app ofrece crear la regla. Página Categorías: crear, renombrar, borrar y unir categorías, y la lista de comercios sin categoría.
+- Presupuestos mensuales por categoría (30), con barra de avance y marca de cuánto del mes ha pasado.
+- Inicio con gastos del mes vs el anterior, gasto por día y por categoría, y pendiente por antigüedad (14). Los gráficos son HTML/CSS, sin JavaScript, y también van en el reporte HTML.
+- Cuotas vigentes (12): cuotas restantes, deuda restante, mes de término, compromiso mensual y proyección a 12 meses.
+- Suscripciones detectadas (15): cobros mensuales por un monto parecido durante 3 meses o más, con costo anual y aviso si el precio subió.
+- Alertas "Revisar" (16): posibles cobros duplicados, montos inusuales, y comercios y ciudades nuevos. La sección no aparece si no hay alertas.
+- Copiar la lista de pendientes como texto (para WhatsApp) y descargarla como CSV, en la web y en el reporte; `--export` en la CLI (19).
+- CLI: `--no-open`, `--no-archive`, `--dry-run`, `-e/--end-date` y `--reanalyze` (06).
+- CLI: sin archivos procesa todas las descargas de `pre-process-data/` (08).
+- Migración v2 del historial: tablas `resolutions`, `dismissed_suggestions`, `categories` y `category_rules`, y columna `movements.category_id`. Se aplica sola al abrir un historial existente.
+
+### Changed
+- La página de inicio de la web pasa a ser Inicio (`/dashboard`); Pendientes sigue en `/pending`.
+- En el celular, la tabla de Movimientos se muestra como una tarjeta por movimiento.
+- La CLI sin archivos y sin `--db` ya no es un error de uso: busca descargas en `pre-process-data/` y, si no hay ninguna, termina con código 1.
+- El pie del reporte HTML dice "bankcheck" en vez de "Account Analysis Tool".
+
 ## [0.5.0] - 2026-10-21
 
 ### Added
@@ -88,7 +113,8 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.2.0...v0.3.0

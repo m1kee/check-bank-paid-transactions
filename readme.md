@@ -12,7 +12,13 @@ Current version: see [`CHANGELOG.md`](CHANGELOG.md) · Roadmap: [`feature-propos
 * **Several downloads at once:** movements repeated across downloads are counted once.
 * **History (`--db`):** every download is imported into a SQLite database, so an unpaid purchase stays pending after the bank closes the period, and a payment in the next period can cover it.
 * **Web app (`bankcheck-web`):** upload downloads from any device, see unpaid purchases and browse the history. Mobile-first, works without JavaScript.
-* **Audit info:** lists unpaid purchases and payments that didn't match any purchase.
+* **Audit info:** lists unpaid purchases, payments that didn't match any purchase, and which payment covered each purchase.
+* **Manual reconciliation:** mark a purchase as paid or ignored (with a reason), or ignore a payment; stored in the history and undoable.
+* **Grouped payments:** a payment equal to the sum of 2–4 unpaid purchases is *suggested* (never applied on its own) so you can accept it.
+* **Categories and budgets:** every movement gets a category from editable rules (the longest match wins); change one in the web app and it offers to learn a rule. Monthly budgets per category show whether you're ahead of the month's pace.
+* **Charts:** spending by day and by category (vs the previous month), and pending amount by age; plain HTML/CSS, offline.
+* **Installments, subscriptions and alerts:** remaining debt per installment purchase and a 12-month projection; recurring monthly charges with price increases; possible duplicates, unusual amounts and new merchants/cities.
+* **Share the pending list:** copy it as text (ready for WhatsApp) or download a CSV, from the web app, the HTML report or `--export`.
 * **HTML report:** self-contained dark-mode page that works offline and opens in the browser.
 * **File archiving:** raw inputs are moved to `processed-archive/` with a timestamp; a clean `.xlsx` (real dates) is saved to `data/`.
 * **Configurable:** payment terms, exclusions, matching window and file layout live in `bankcheck/config.py`.
@@ -31,6 +37,15 @@ check-bank-paid-transactions/
 |   |-- parsers.py       Read the bank export into a normalized DataFrame
 |   |-- dedup.py         Merge downloads without duplicating movements
 |   |-- history.py       SQLite history of every imported movement
+|   |-- reconcile.py     Manual resolutions and grouped-payment suggestions
+|   |-- categories.py    Category rules, spending and budgets
+|   |-- installments.py  Purchases in installments
+|   |-- recurring.py     Subscriptions and recurring charges
+|   |-- alerts.py        Duplicates, unusual amounts, new merchants and cities
+|   |-- insights.py      Everything above, together, for the home page and the report
+|   |-- charts.py        HTML/CSS charts
+|   |-- export.py        Pending list as text and CSV
+|   |-- text.py          Description normalization helpers
 |   |-- matching.py      Pair purchases with payments
 |   |-- analysis.py      Per-currency analysis and totals
 |   |-- formatting.py    Currency formatting
@@ -82,10 +97,15 @@ uv run bankcheck pre-process-data/movimientos.xls
 ```
 
 Arguments:
-* `input_files`: one or more raw files (`.xls`/`.xlsx`). Pass the pesos and dollars files together to get a single report.
+* `input_files`: one or more raw files (`.xls`/`.xlsx`). Pass the pesos and dollars files together to get a single report. Without files, every download waiting in `pre-process-data/` is processed.
 * `-o, --output`: optional prefix for the clean `.xlsx` file (default `cleaned-movements`).
-* `-d, --start-date`: ignore movements before this date (`YYYY-MM-DD`).
+* `-d, --start-date` / `-e, --end-date`: analyze only this range (`YYYY-MM-DD`, both inclusive).
 * `--db [RUTA]`: import the files into the history (default `data/bank.db`) and analyze the whole history instead of only these downloads. Without files, it just re-analyzes the history.
+* `--no-open`: write the HTML report but don't open the browser.
+* `--no-archive`: leave the input files where they are.
+* `--dry-run`: write nothing at all (no clean file, archive, report or history changes); just print the analysis.
+* `--reanalyze ARCHIVO`: analyze a clean `.xlsx` from `data/` instead of bank downloads.
+* `--export ARCHIVO.csv`: save the pending purchases as CSV.
 * `-v, --verbose` / `-q, --quiet`: more detail (debugging) / only the report, warnings and errors.
 * `--version`: print the version.
 
@@ -117,9 +137,13 @@ uv run bankcheck-web --reload           # restart on code changes (development)
 ```
 
 Pages:
-* **Pendientes** (`/pending`): unpaid purchases over the whole history, with totals and age; optional start date.
+* **Inicio** (`/dashboard`): spending of the month vs the previous one, budgets, alerts and charts.
+* **Pendientes** (`/pending`): unpaid purchases over the whole history, with totals, age and a date range; resolve them by hand, accept grouped-payment suggestions, see which payment covered each purchase, copy the list or download a CSV.
 * **Subir** (`/upload`): upload one or more `.xls`/`.xlsx` downloads; shows how many movements were new. If one file can't be read, nothing is imported.
-* **Movimientos** (`/movements`): the whole history, with search and currency/date filters.
+* **Movimientos** (`/movements`): the whole history, with search and currency/category/date filters; change a movement's category in place.
+* **Cuotas** (`/installments`): installment purchases still running, monthly commitment, remaining debt and projection.
+* **Suscripciones** (`/subscriptions`): recurring monthly charges, yearly cost and price increases.
+* **Categorías** (`/categories`): categories, budgets, rules, merging categories and the merchants still without one.
 
 It uses the same history as `bankcheck --db`. Settings, through environment variables:
 

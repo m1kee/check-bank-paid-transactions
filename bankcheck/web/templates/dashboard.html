@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Inicio{% endblock %}
+{% block content %}
+<h1>Gastos de {{ month | month_name }}</h1>
+
+{% if not has_history %}
+<div class="notice">Aún no hay movimientos. <a href="/upload">Sube una descarga del banco</a> para empezar.</div>
+{% else %}
+<form class="filters" method="get" action="/dashboard">
+    <label>Mes
+        <select name="month" onchange="this.form.submit()">
+            {% for m in months %}<option value="{{ m }}" {{ 'selected' if m == month }}>{{ m | month_name }}</option>{% endfor %}
+        </select>
+    </label>
+    {% if currencies | length > 1 %}
+    <label>Moneda
+        <select name="currency" onchange="this.form.submit()">
+            {% for c in currencies %}<option value="{{ c }}" {{ 'selected' if c == currency }}>{{ c }}</option>{% endfor %}
+        </select>
+    </label>
+    {% endif %}
+    <noscript><button type="submit">Ver</button></noscript>
+</form>
+
+{% set delta = insights.total_spent - insights.previous_spent %}
+<div class="cards">
+    <div class="card hero"><h3>Gastado</h3><p class="value">{{ insights.total_spent | money(currency) }}</p>
+        <p class="meta">{{ '+' if delta > 0 }}{{ delta | money(currency) }} vs {{ (month - 1) | month_name }}</p></div>
+    <div class="card"><h3>Sin pagar</h3>
+        <p class="value"><a href="/pending">{{ (pending.total_unpaid if pending else 0) | money(currency) }}</a></p></div>
+    {% if currency in insights.plans_summary %}
+    <div class="card"><h3>Cuotas por mes</h3>
+        <p class="value"><a href="/installments">{{ insights.plans_summary[currency][0] | money(currency) }}</a></p></div>
+    {% endif %}
+    {% set subs = insights.subscriptions | selectattr('currency', 'equalto', currency) | list %}
+    {% if subs %}
+    <div class="card"><h3>Suscripciones</h3>
+        <p class="value"><a href="/subscriptions">{{ subs | length }}</a></p></div>
+    {% endif %}
+</div>
+
+{% if budgets %}
+<h2>Presupuestos</h2>
+<ul class="list budgets">
+    {% for line, meter in budgets %}
+    <li>
+        <div class="budget-head">
+            <span class="desc">{{ line.category }}</span>
+            <span class="amount">{{ line.spent | money }} / {{ line.budget | money }}</span>
+        </div>
+        {{ meter | safe }}
+        <div class="meta">
+            {{ (line.ratio * 100) | round | int }}% · {{ (line.month_ratio * 100) | round | int }}% del mes transcurrido
+            {% if line.status == 'over' %}<span class="tag danger">✕ Excedido</span>
+            {% elif line.status == 'warning' %}<span class="tag warning">▲ Sobre el ritmo</span>{% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+<p class="muted">La línea marca cuánto del mes ha pasado: si la barra va más adelante, vas sobre el ritmo. <a href="/categories">Editar presupuestos</a></p>
+{% endif %}
+
+{% if important_alerts or novelties %}
+<h2>⚠️ Revisar</h2>
+{% if important_alerts %}
+<ul class="list">
+    {% for alert in important_alerts %}
+    {% set row = alert.movements[-1] %}
+    <li>
+        <div>
+            <div class="desc">{{ row['Description'] }}</div>
+            <div class="meta"><span class="tag warning">▲ {{ alert.label }}</span> {{ row['Date'] | date }}{% if alert.movements | length > 1 %} · {{ alert.movements | length }} cobros{% endif %} · {{ alert.detail }}</div>
+        </div>
+        <div class="amount">{{ row['Amount'] | money(row['Currency']) }}</div>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% if novelties %}
+<details class="card">
+    <summary>Comercios y ciudades nuevos ({{ novelties | length }})</summary>
+    <ul class="list flat">
+        {% for alert in novelties %}
+        {% set row = alert.movements[0] %}
+        <li>
+            <div>
+                <div class="desc">{{ row['City'] if alert.kind == 'new_city' else row['Description'] }}</div>
+                <div class="meta">{{ alert.label }} · {{ row['Date'] | date }}{% if alert.kind == 'new_city' %} · {{ row['Description'] }}{% endif %}</div>
+            </div>
+            <div class="amount">{{ row['Amount'] | money(row['Currency']) }}</div>
+        </li>
+        {% endfor %}
+    </ul>
+</details>
+{% endif %}
+{% endif %}
+
+<h2>Gasto por categoría</h2>
+<div class="card">{{ charts.categories }}</div>
+<details class="card">
+    <summary>Ver tabla</summary>
+    <div class="table-wrap flat">
+        <table>
+            <thead><tr><th>Categoría</th><th class="num">Compras</th><th class="num">{{ month | month_name }}</th><th class="num">{{ (month - 1) | month_name }}</th></tr></thead>
+            <tbody>
+                {% for r in insights.spending.to_dict('records') %}
+                <tr><td><a href="/movements?category={{ r['Category'] | urlencode }}">{{ r['Category'] }}</a></td><td class="num">{{ r['Count'] | int }}</td>
+                    <td class="num">{{ r['Amount'] | money(currency) }}</td><td class="num">{{ r['Previous'] | money(currency) }}</td></tr>
+                {% else %}<tr><td colspan="4" class="muted">Sin gastos este mes.</td></tr>{% endfor %}
+            </tbody>
+        </table>
+    </div>
+</details>
+
+<h2>Gasto por día</h2>
+<div class="card">{{ charts.daily }}</div>
+
+{% if charts.age %}
+<h2>Pendiente por antigüedad</h2>
+<div class="card">{{ charts.age }}</div>
+{% endif %}
+{% endif %}
+{% endblock %}

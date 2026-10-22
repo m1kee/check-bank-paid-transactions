@@ -49,7 +49,7 @@ def raw_export(*sections, leading_rows=16):
 def movements(rows, currency="CLP"):
     """
     A normalized movements DataFrame.
-    Each row is (date "YYYY-MM-DD", description, amount[, installments]).
+    Each row is (date "YYYY-MM-DD", description, amount[, installments[, city]]).
     """
     records = []
     for date, description, amount, *rest in rows:
@@ -59,7 +59,7 @@ def movements(rows, currency="CLP"):
                 "Date": pd.Timestamp(date),
                 "Card Type": "Titular********0000",
                 "Description": description,
-                "City": "",
+                "City": rest[1] if len(rest) > 1 else "",
                 "Installments": rest[0] if rest else "01/01",
                 "Installment Details": "1 / 0",
                 "Amount": amount,

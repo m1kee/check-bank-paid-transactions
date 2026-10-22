@@ -13,5 +13,8 @@ Una sección "⚠️ Revisar" en el reporte con:
 - **Cobros internacionales o en otra ciudad** inesperados (la columna `City` ya existe y no se usa).
 
 ## Criterios de aceptación
-- [ ] Dos cobros idénticos el mismo día aparecen en "Revisar".
-- [ ] La sección no se muestra si no hay alertas.
+- [x] Dos cobros idénticos el mismo día aparecen en "Revisar".
+- [x] La sección no se muestra si no hay alertas.
+
+## Estado (v0.6.0)
+Solo los movimientos de los últimos 60 días generan alertas. "Comercio nuevo" y "Ciudad nueva" necesitan 60 días de historial; en el Inicio van plegadas bajo los duplicados y montos inusuales.

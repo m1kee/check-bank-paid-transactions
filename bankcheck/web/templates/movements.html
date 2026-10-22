@@ -15,6 +15,14 @@
             {% for c in currencies %}<option value="{{ c }}" {{ 'selected' if c == currency }}>{{ c }}</option>{% endfor %}
         </select>
     </label>
+    <label>Categoría
+        <select name="category">
+            <option value="">Todas</option>
+            {% for c in categories %}<option value="{{ c.name }}" {{ 'selected' if c.name == category }}>{{ c.name }}</option>{% endfor %}
+            <option value="{{ uncategorized }}" {{ 'selected' if category == uncategorized }}>{{ uncategorized }}</option>
+            <option value="{{ payments_category }}" {{ 'selected' if category == payments_category }}>{{ payments_category }}</option>
+        </select>
+    </label>
     <label>Desde <input type="date" name="date_from" value="{{ date_from or '' }}"></label>
     <label>Hasta <input type="date" name="date_to" value="{{ date_to or '' }}"></label>
     <noscript><button type="submit">Filtrar</button></noscript>

@@ -59,10 +59,10 @@ class ExitCodeTests(CliTestCase):
         self.assertEqual(code, 1)
         self.assertTrue(os.path.exists(good))
 
-    def test_no_files_without_db_is_a_usage_error(self):
-        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
-            cli.main([])
-        self.assertEqual(raised.exception.code, 2)
+    def test_no_files_and_empty_input_folder_returns_one(self):
+        code, _, err = self.run_cli()
+        self.assertEqual(code, 1)
+        self.assertIn("no hay ninguno en 'pre-process-data/'", err)
 
 
 class OutputTests(CliTestCase):
@@ -115,6 +115,98 @@ class HistoryCliTests(CliTestCase):
         code, _, err = self.run_cli("--db", "h.db")
         self.assertEqual(code, 1)
         self.assertIn("Actualiza bankcheck", err)
+
+
+class FolderTests(CliTestCase):
+    def test_without_arguments_processes_every_pending_file(self):
+        os.makedirs("pre-process-data")
+        self.write_download("pre-process-data/pesos.xlsx", [("02/09/2026", "UBER", 4500)])
+        self.write_download("pre-process-data/otro.xlsx", [("03/09/2026", "LIDER", 23450)])
+        code, out, err = self.run_cli()
+        self.assertEqual(code, 0)
+        self.assertIn("se procesan los 2", err)
+        self.assertIn("UBER", out)
+        self.assertIn("LIDER", out)
+        self.assertEqual(os.listdir("pre-process-data"), [])
+
+    def test_pesos_and_dollars_in_one_report(self):
+        rows_usd = raw_section([("05/09/2026", "NETFLIX", 15.99)], title="Movimientos Internacionales")
+        raw_export(rows_usd).to_excel("usd.xlsx", header=False, index=False)
+        clp = self.write_download("clp.xlsx", [("02/09/2026", "UBER", 4500)])
+        _, out, _ = self.run_cli(clp, "usd.xlsx", "--no-open")
+        self.assertIn("== Pesos (CLP) ==", out)
+        self.assertIn("== Dólares (USD) ==", out)
+
+
+class FlagTests(CliTestCase):
+    def snapshot(self):
+        return sorted(os.path.relpath(os.path.join(root, f)) for root, _, files in os.walk(".") for f in files)
+
+    def test_no_archive_and_no_open_leave_the_input_in_place(self):
+        path = self.write_download("movs.xlsx", [("02/09/2026", "UBER", 4500)])
+        self.run_cli(path, "--no-archive", "--no-open")
+        self.assertTrue(os.path.exists(path))
+        cli.webbrowser.open.assert_not_called()
+        self.assertEqual(len(os.listdir("reports")), 1)
+
+    def test_dry_run_writes_nothing(self):
+        path = self.write_download("movs.xlsx", [("02/09/2026", "UBER", 4500)])
+        before = self.snapshot()
+        code, out, _ = self.run_cli(path, "--dry-run", "--db", "h.db")
+        self.assertEqual(code, 0)
+        self.assertIn("UBER", out)
+        self.assertEqual(self.snapshot(), before)
+        cli.webbrowser.open.assert_not_called()
+
+    def test_dry_run_over_an_existing_history_leaves_it_untouched(self):
+        sep = self.write_download("sep.xlsx", [("02/09/2026", "UBER", 4500)])
+        self.run_cli(sep, "--db", "h.db", "--no-open")
+        size = os.path.getsize("h.db")
+        octo = self.write_download("oct.xlsx", [("02/10/2026", "LIDER", 23450)])
+        _, out, _ = self.run_cli(octo, "--db", "h.db", "--dry-run")
+        self.assertIn("LIDER", out)
+        self.assertEqual(os.path.getsize("h.db"), size)
+        _, out, _ = self.run_cli("--db", "h.db", "--dry-run")
+        self.assertNotIn("LIDER", out)
+
+    def test_end_date(self):
+        path = self.write_download("movs.xlsx", [("02/09/2026", "SEP", 4500), ("02/10/2026", "OCT", 1000)])
+        _, out, _ = self.run_cli(path, "-d", "2026-09-01", "-e", "2026-09-30", "--no-open")
+        self.assertIn("SEP", out)
+        self.assertNotIn("OCT", out)
+
+    def test_end_before_start_is_rejected(self):
+        with contextlib.redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
+            cli.main(["x.xls", "-d", "2026-10-01", "-e", "2026-09-01"])
+
+    def test_reanalyze_a_clean_file(self):
+        path = self.write_download("movs.xlsx", [("02/09/2026", "UBER", 4500), ("03/09/2026", "PAGO ONLINE", -4500), ("04/09/2026", "LIDER", 23450)])
+        self.run_cli(path, "--no-open")
+        [clean] = os.listdir("data")
+        code, out, _ = self.run_cli("--reanalyze", os.path.join("data", clean), "--no-open")
+        self.assertEqual(code, 0)
+        self.assertIn("LIDER", out)
+        self.assertNotIn("UBER ", out)
+
+    def test_reanalyze_rejects_a_raw_download(self):
+        path = self.write_download("movs.xlsx", [("02/09/2026", "UBER", 4500)])
+        code, _, err = self.run_cli("--reanalyze", path)
+        self.assertEqual(code, 1)
+        self.assertIn("no es un archivo limpio", err)
+
+    def test_export_csv(self):
+        path = self.write_download("movs.xlsx", [("02/09/2026", "UBER", 4500)])
+        self.run_cli(path, "--export", "pendientes.csv", "--no-open")
+        with open("pendientes.csv", encoding="utf-8-sig") as f:
+            self.assertEqual(f.read().splitlines()[1], "CLP,2026-09-02,UBER,,4500")
+
+    def test_grouped_payment_is_suggested_in_the_console(self):
+        path = self.write_download(
+            "movs.xlsx", [("01/10/2026", "CAFE", 3000), ("02/10/2026", "UBER", 7000), ("05/10/2026", "PAGO ONLINE", -10000)]
+        )
+        _, out, _ = self.run_cli(path, "--no-open")
+        self.assertIn("POSIBLE PAGO AGRUPADO", out)
+        self.assertIn("CAFE $3.000 + UBER $7.000", out)
 
 
 if __name__ == "__main__":
