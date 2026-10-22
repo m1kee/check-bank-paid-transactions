@@ -99,6 +99,10 @@ class UploadTests(WebTestCase):
         response = self.client.get("/upload")
         self.assertEqual(response.status_code, 200)
         self.assertIn('type="file"', response.text)
+        # Drag and drop: the zone and its script
+        self.assertIn("data-dropzone", response.text)
+        self.assertIn("/static/upload.js", response.text)
+        self.assertEqual(self.client.get("/static/upload.js").status_code, 200)
 
 
 class PendingTests(WebTestCase):

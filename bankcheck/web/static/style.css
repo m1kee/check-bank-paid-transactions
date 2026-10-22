@@ -266,6 +266,10 @@ details.card > summary::-webkit-details-marker { display: none; }
             border: 2px dashed var(--border-strong); border-radius: var(--radius); background: var(--surface-2); cursor: pointer; }
 .dropzone:hover, .dropzone.drag { border-color: var(--accent); background: var(--accent-soft); }
 .dropzone input[type=file] { max-width: 100%; height: auto; border: none; background: transparent; padding: 0; }
+.dropzone-files { font-weight: 600; word-break: break-word; }
+.dropzone.enhanced .dropzone-files { display: block; }
+.dropzone.enhanced input[type=file] { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.dropzone { position: relative; }
 .dropzone .row-icon { width: 48px; height: 48px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); }
 
 .muted { color: var(--muted); }

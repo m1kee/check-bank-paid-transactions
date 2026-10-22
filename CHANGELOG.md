@@ -6,6 +6,14 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.10.0] - 2026-10-22
+
+### Added
+- Subir movimientos: se pueden arrastrar los archivos .xls / .xlsx a la zona de subida. Mientras se arrastra, la zona se destaca, se muestran los archivos elegidos y se descartan los que no son .xls / .xlsx. Si se suelta un archivo fuera de la zona, el navegador ya no lo abre ni sale de la página. Sin JavaScript se puede seguir haciendo clic para elegir los archivos.
+
+### Changed
+- Los botones "Subir descarga" pasan a llamarse "Subir movimientos", igual que la página, y los textos que invitan a subir hablan de los movimientos no facturados del banco.
+
 ## [0.9.1] - 2026-10-22
 
 ### Fixed
@@ -152,7 +160,8 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.1...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.10.0...HEAD
+[0.10.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.7.0...v0.8.0
