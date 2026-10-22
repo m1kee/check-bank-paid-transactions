@@ -125,6 +125,16 @@ MIGRATIONS.append(
     """
 )
 
+# v4: movements a later download replaced. The view shows a pending purchase
+# provisionally (e.g. "ARAMCO", no city) and the posted one under another
+# description ("ARAMCO COMPRAS", with city), so the fingerprint changes and the
+# old row would stay as a ghost duplicate. Replaced rows are kept but not analyzed.
+MIGRATIONS.append(
+    """
+    ALTER TABLE movements ADD COLUMN replaced_by_import_id INTEGER REFERENCES imports(id);
+    """
+)
+
 # DataFrame column -> movements table column
 _DB_COLUMNS = {
     "Currency": "currency",
@@ -219,6 +229,11 @@ def import_movements(
     """
     Add one download to the history. Movements already in it are not duplicated:
     only their last-seen import and timestamp are updated.
+
+    The download is the bank's whole unbilled view, so a movement from an earlier
+    download, of a currency in this one and dated within its date range, that
+    this one no longer shows was replaced by the bank (a provisional charge that
+    got posted under another description): it is marked as replaced.
     """
     seen_at = (now or datetime.datetime.now()).isoformat(timespec="seconds")
     df = add_fingerprints(movements)
@@ -229,7 +244,15 @@ def import_movements(
         "first_import_id, last_import_id, first_seen_at, last_seen_at) "
         f"VALUES ({', '.join('?' * len(columns))}, ?, ?, ?, ?, ?)"
     )
-    touch = "UPDATE movements SET last_import_id = ?, last_seen_at = ? WHERE fingerprint = ?"
+    # Seen again: if a later download had replaced it, it's back
+    touch = (
+        "UPDATE movements SET last_import_id = ?, last_seen_at = ?, replaced_by_import_id = NULL "
+        "WHERE fingerprint = ?"
+    )
+    replace = (
+        "UPDATE movements SET replaced_by_import_id = ? WHERE currency = ? AND date BETWEEN ? AND ? "
+        "AND last_import_id <> ? AND replaced_by_import_id IS NULL"
+    )
 
     with conn:
         import_id = conn.execute(
@@ -247,6 +270,12 @@ def import_movements(
                 new_count += 1
             else:
                 conn.execute(touch, (import_id, seen_at, fingerprint))
+
+        for currency, dates in df.groupby("Currency")["Date"]:
+            first, last = (pd.Timestamp(d).strftime("%Y-%m-%d") for d in (dates.min(), dates.max()))
+            replaced = conn.execute(replace, (import_id, currency, first, last, import_id)).rowcount
+            if replaced:
+                log.info("%d movimientos en %s ya no aparecen en la descarga: reemplazados", replaced, currency)
 
         existing_count = len(df) - new_count
         conn.execute(
@@ -270,15 +299,17 @@ def recent_imports(conn: sqlite3.Connection, limit: int = 8) -> list:
 
 def load_movements(conn: sqlite3.Connection, currency: str = None) -> pd.DataFrame:
     """
-    Every movement in the history (optionally of one currency), sorted by date,
-    with the normalized columns plus "Id", "First Seen" and "Last Seen".
+    Every movement in the history (optionally of one currency) that no later
+    download replaced, sorted by date, with the normalized columns plus "Id",
+    "First Seen" and "Last Seen".
     """
     query = (
-        f"SELECT id, {', '.join(_DB_COLUMNS.values())}, first_seen_at, last_seen_at FROM movements"
+        f"SELECT id, {', '.join(_DB_COLUMNS.values())}, first_seen_at, last_seen_at FROM movements "
+        "WHERE replaced_by_import_id IS NULL"
     )
     params = ()
     if currency is not None:
-        query += " WHERE currency = ?"
+        query += " AND currency = ?"
         params = (currency,)
     query += " ORDER BY date, id"
 
