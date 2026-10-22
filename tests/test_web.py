@@ -151,6 +151,32 @@ class PendingTests(WebTestCase):
         self.assertIn("&lt;script&gt;", page)
 
 
+class AlertTests(WebTestCase):
+    def setUp(self):
+        super().setUp()
+        self.upload(("oct.xlsx", xlsx([("02/10/2026", "CAFE 12", 2500), ("02/10/2026", "CAFE 12", 2500)])))
+
+    def dismiss(self, button):
+        page = self.client.get("/dashboard").text
+        key = page.split(button)[0].rsplit('name="key" value="', 1)[1].split('"')[0]
+        return self.client.post("/alerts/dismiss", data={"key": key, "next": "/dashboard"}, follow_redirects=False)
+
+    def test_dismissing_one_alert(self):
+        self.assertIn("Posible cobro duplicado", self.client.get("/dashboard").text)
+        response = self.dismiss("No es duplicado")
+        self.assertEqual(response.headers["location"], "/dashboard")
+        self.assertNotIn("Posible cobro duplicado", self.client.get("/dashboard").text)
+
+    def test_silencing_a_merchant_and_turning_it_back_on(self):
+        self.dismiss("No avisar más por este comercio")
+        page = self.client.get("/dashboard").text
+        self.assertNotIn("Posible cobro duplicado", page)
+        self.assertIn("cafe (CLP)", page)
+
+        self.client.post("/alerts/restore", data={"key": "duplicate@CLP|cafe"})
+        self.assertIn("Posible cobro duplicado", self.client.get("/dashboard").text)
+
+
 class MovementsTests(WebTestCase):
     def setUp(self):
         super().setUp()

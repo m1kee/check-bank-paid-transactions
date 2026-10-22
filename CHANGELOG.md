@@ -6,6 +6,12 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.11.0] - 2026-10-22
+
+### Added
+- Avisos de cobro duplicado: si un mismo comercio cobra el mismo monto en 4 días distintos o más dentro de la ventana de alertas (`DUPLICATE_HABITUAL_MIN_DAYS`), se considera un cobro **habitual** (por ejemplo, un juego de lotería tres veces por semana). Para esos cobros solo se avisa si se repiten el mismo día.
+- Botones en "Revisar" del Resumen: **"No es duplicado"** (o "Está bien" para un monto inusual) oculta ese aviso, y **"No avisar más por este comercio"** silencia todos sus avisos de duplicado. Los comercios silenciados aparecen en una lista desde la que se pueden volver a activar. Los avisos descartados tampoco se notifican ni aparecen en el reporte de la CLI (esquema del historial v5).
+
 ## [0.10.0] - 2026-10-22
 
 ### Added
@@ -160,7 +166,8 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.10.0...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.11.0...HEAD
+[0.11.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.8.0...v0.9.0

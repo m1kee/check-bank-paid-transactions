@@ -4,7 +4,12 @@ amounts, and merchants or cities never seen before.
 
 Only movements from the last config.ALERT_LOOKBACK_DAYS (counted back from the
 newest movement, so an old export still gets its alerts) raise alerts.
+
+An alert can be dismissed by hand, either that one alert or every alert of its
+kind for that merchant; the dismissals live in the history.
 """
+import datetime
+import sqlite3
 from dataclasses import dataclass, field
 
 import pandas as pd
@@ -43,6 +48,18 @@ class Alert:
     def date(self):
         return max(m["Date"] for m in self.movements)
 
+    @property
+    def key(self) -> str:
+        """Identifies this alert across analyses (and its notification)."""
+        ids = ",".join(str(m.get("Id", m["Description"])) for m in self.movements)
+        return f"{self.kind}:{ids}"
+
+    @property
+    def merchant_key(self) -> str:
+        """Identifies every alert of this kind for this merchant, to silence them all."""
+        row = self.movements[-1]
+        return f"{self.kind}@{row['Currency']}|{merchant_key(row['Description'])}"
+
 
 def _purchases(movements: pd.DataFrame) -> pd.DataFrame:
     is_payment = movements["Description"].map(is_payment_description).astype(bool)
@@ -51,10 +68,11 @@ def _purchases(movements: pd.DataFrame) -> pd.DataFrame:
 
 def _duplicates(df: pd.DataFrame, since) -> list:
     alerts = []
-    max_gap = config.DUPLICATE_MAX_DAYS
     for _, group in df.groupby(["Currency", "Description", "Amount"], sort=False):
         if len(group) < 2:
             continue
+        habitual = group.loc[group["Date"] >= since, "Date"].nunique() >= config.DUPLICATE_HABITUAL_MIN_DAYS
+        max_gap = 0 if habitual else config.DUPLICATE_MAX_DAYS
         rows = group.sort_values("Date", kind="stable").to_dict("records")
         for earlier, later in zip(rows, rows[1:]):
             gap = (later["Date"] - earlier["Date"]).days
@@ -93,8 +111,8 @@ def _first_seen(df: pd.DataFrame, key: pd.Series, newest, kind: str, detail: str
     return [Alert(kind, detail, [row]) for row in firsts.drop(columns="_key").to_dict("records")]
 
 
-def find_alerts(movements: pd.DataFrame) -> list:
-    """Every alert, newest first."""
+def find_alerts(movements: pd.DataFrame, dismissed: set = frozenset()) -> list:
+    """Every alert not in `dismissed` (alert keys or merchant keys, see Alert), newest first."""
     df = _purchases(movements)
     if df.empty:
         return []
@@ -105,4 +123,37 @@ def find_alerts(movements: pd.DataFrame) -> list:
     alerts += _first_seen(df, df["Currency"] + "|" + df["Description"].map(merchant_key), newest,
                           NEW_MERCHANT, "Primera compra en este comercio.")
     alerts += _first_seen(df, df["City"].map(normalize), newest, NEW_CITY, "Primera compra en esta ciudad.")
+    alerts = [a for a in alerts if a.key not in dismissed and a.merchant_key not in dismissed]
     return sorted(alerts, key=lambda a: a.date, reverse=True)
+
+
+# --- Dismissed alerts ----------------------------------------------------------
+
+
+def load_dismissed(conn: sqlite3.Connection) -> set:
+    return {key for (key,) in conn.execute("SELECT key FROM dismissed_alerts")}
+
+
+def dismiss(conn: sqlite3.Connection, key: str):
+    """Stop showing an alert (Alert.key) or every alert of a kind for a merchant (Alert.merchant_key)."""
+    with conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO dismissed_alerts (key, created_at) VALUES (?, ?)",
+            (key, datetime.datetime.now().isoformat(timespec="seconds")),
+        )
+
+
+def restore(conn: sqlite3.Connection, key: str):
+    with conn:
+        conn.execute("DELETE FROM dismissed_alerts WHERE key = ?", (key,))
+
+
+def silenced_merchants(dismissed: set) -> list:
+    """(key, label) for each merchant silenced for duplicates, e.g. "loteria de concepcion (CLP)"."""
+    prefix = f"{DUPLICATE}@"
+    found = []
+    for key in sorted(dismissed):
+        if key.startswith(prefix):
+            currency, merchant = key[len(prefix):].split("|", 1)
+            found.append((key, f"{merchant} ({currency})"))
+    return found

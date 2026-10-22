@@ -165,6 +165,18 @@
                     <div class="row-main">
                         <div class="row-title">{{ row['Description'] }}</div>
                         <div class="row-meta"><span class="badge warning">{{ alert.label }}</span>{{ row['Date'] | date }}{% if alert.movements | length > 1 %} · {{ alert.movements | length }} cobros{% endif %}</div>
+                        <div class="alert-actions">
+                            <form method="post" action="/alerts/dismiss">
+                                <input type="hidden" name="key" value="{{ alert.key }}"><input type="hidden" name="next" value="{{ back_url }}">
+                                <button type="submit" class="btn ghost sm">{{ 'No es duplicado' if alert.kind == 'duplicate' else 'Está bien' }}</button>
+                            </form>
+                            {% if alert.kind == 'duplicate' %}
+                            <form method="post" action="/alerts/dismiss">
+                                <input type="hidden" name="key" value="{{ alert.merchant_key }}"><input type="hidden" name="next" value="{{ back_url }}">
+                                <button type="submit" class="btn ghost sm">No avisar más por este comercio</button>
+                            </form>
+                            {% endif %}
+                        </div>
                     </div>
                 </div>
                 <div class="row-amount">{{ row['Amount'] | money(row['Currency']) }}</div>
@@ -176,6 +188,22 @@
             <div class="row-icon">{{ icon("check-circle") }}</div>
             <p>Sin cobros duplicados ni montos inusuales.</p>
         </div>
+        {% endif %}
+        {% if silenced %}
+        <details class="disclosure mt">
+            <summary>Comercios sin aviso de duplicados ({{ silenced | length }})</summary>
+            <ul class="rows">
+                {% for key, label in silenced %}
+                <li>
+                    <div class="row-main"><div class="row-title">{{ label }}</div></div>
+                    <form method="post" action="/alerts/restore">
+                        <input type="hidden" name="key" value="{{ key }}"><input type="hidden" name="next" value="{{ back_url }}">
+                        <button type="submit" class="btn secondary sm">Volver a avisar</button>
+                    </form>
+                </li>
+                {% endfor %}
+            </ul>
+        </details>
         {% endif %}
         {% if novelties %}
         <details class="disclosure mt">

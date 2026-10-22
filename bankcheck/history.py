@@ -135,6 +135,16 @@ MIGRATIONS.append(
     """
 )
 
+# v5: alerts dismissed by hand (alerts.dismiss): one alert, or every duplicate of a merchant
+MIGRATIONS.append(
+    """
+    CREATE TABLE dismissed_alerts (
+        key TEXT PRIMARY KEY,
+        created_at TEXT NOT NULL
+    );
+    """
+)
+
 # DataFrame column -> movements table column
 _DB_COLUMNS = {
     "Currency": "currency",
