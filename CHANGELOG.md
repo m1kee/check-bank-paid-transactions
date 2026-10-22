@@ -6,6 +6,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.9.1] - 2026-10-22
+
+### Fixed
+- Un movimiento que el banco muestra primero como provisorio (p. ej. `ARAMCO`, sin ciudad) y después ya contabilizado con otra descripción (`ARAMCO COMPRAS`, con ciudad) quedaba dos veces en el historial. El pago se asignaba a la versión provisoria y la definitiva aparecía como no pagada. Ahora, al importar una descarga, los movimientos anteriores de la misma moneda con fecha dentro de su rango que ya no aparecen en ella se marcan como reemplazados y no se analizan. Se conservan en el historial y vuelven si una descarga posterior los muestra de nuevo (esquema del historial v4).
+
 ## [0.9.0] - 2026-10-22
 
 ### Added
@@ -147,7 +152,8 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.0...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.1...HEAD
+[0.9.1]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.0...v0.9.1
 [0.9.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.6.0...v0.7.0

@@ -84,6 +84,42 @@ class ImportTests(HistoryTestCase):
         history.import_movements(self.conn, movements([("2026-10-02", "STORE", 10)], currency="USD"))
         self.assertEqual(history.load_movements(self.conn, currency="USD")["Currency"].tolist(), ["USD"])
 
+    def test_provisional_movement_replaced_by_its_posted_version(self):
+        # The view first shows the charge as "COPEC" and, once posted, as "COPEC COMPRAS"
+        history.import_movements(
+            self.conn, movements([("2026-10-02", "UBER", 4500), ("2026-10-16", "COPEC", 13850)]), now=DAY_1
+        )
+        history.import_movements(
+            self.conn,
+            movements([("2026-10-02", "UBER", 4500), ("2026-10-16", "COPEC COMPRAS", 13850), ("2026-10-21", PAY, -13850)]),
+            now=DAY_2,
+        )
+
+        self.assertEqual(history.load_movements(self.conn)["Description"].tolist(), ["UBER", "COPEC COMPRAS", PAY])
+        [result] = analyze(history.load_movements(self.conn))
+        self.assertEqual(result.matches["Description"].tolist(), ["COPEC COMPRAS"])
+        self.assertEqual(result.unpaid["Description"].tolist(), ["UBER"])
+
+    def test_only_movements_within_the_new_download_dates_are_replaced(self):
+        history.import_movements(
+            self.conn, movements([("2026-09-28", "LIDER", 23450), ("2026-10-20", "JUMBO", 9990)]), now=DAY_1
+        )
+        # Older and newer than everything in this download: not replaced
+        history.import_movements(self.conn, movements([("2026-10-05", "UBER", 4500), ("2026-10-15", "RAPPI", 8000)]), now=DAY_2)
+        self.assertEqual(history.load_movements(self.conn)["Description"].tolist(), ["LIDER", "UBER", "RAPPI", "JUMBO"])
+
+    def test_a_download_of_another_currency_replaces_nothing(self):
+        history.import_movements(self.conn, movements([("2026-10-05", "UBER", 4500)]), now=DAY_1)
+        history.import_movements(self.conn, movements([("2026-10-01", "STEAM", 10)], currency="USD"), now=DAY_2)
+        history.import_movements(self.conn, movements([("2026-10-09", "NETFLIX", 16)], currency="USD"), now=DAY_2)
+        self.assertEqual(history.load_movements(self.conn)["Description"].tolist(), ["STEAM", "UBER", "NETFLIX"])
+
+    def test_a_replaced_movement_seen_again_comes_back(self):
+        history.import_movements(self.conn, movements([("2026-10-02", "UBER", 4500), ("2026-10-03", "COPEC", 100)]), now=DAY_1)
+        history.import_movements(self.conn, movements([("2026-10-02", "UBER", 4500), ("2026-10-03", "LIDER", 200)]), now=DAY_2)
+        history.import_movements(self.conn, movements([("2026-10-02", "UBER", 4500), ("2026-10-03", "COPEC", 100)]), now=DAY_2)
+        self.assertEqual(sorted(history.load_movements(self.conn)["Description"]), ["COPEC", "UBER"])
+
     def test_empty_history(self):
         loaded = history.load_movements(self.conn)
         self.assertTrue(loaded.empty)
@@ -135,7 +171,8 @@ class SchemaTests(unittest.TestCase):
             conn = sqlite3.connect(path)
             conn.executescript(
                 "DROP TABLE notifications; DROP TABLE resolutions; DROP TABLE dismissed_suggestions; DROP TABLE category_rules; "
-                "ALTER TABLE movements DROP COLUMN category_id; DROP TABLE categories; PRAGMA user_version = 1;"
+                "ALTER TABLE movements DROP COLUMN category_id; ALTER TABLE movements DROP COLUMN replaced_by_import_id; "
+                "DROP TABLE categories; PRAGMA user_version = 1;"
             )
             conn.close()
 
