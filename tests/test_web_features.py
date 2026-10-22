@@ -107,7 +107,7 @@ class CategoryPagesTests(FeatureTestCase):
                                     headers={"HX-Request": "true"})
         self.assertIn("¿Siempre que diga", response.text)
         self.assertIn('value="TIENDA RARA"', response.text)
-        self.assertNotIn("<nav>", response.text)
+        self.assertNotIn('class="nav"', response.text)
 
         rule = self.client.post("/rules", data={"pattern": "TIENDA RARA", "category_id": hogar}, headers={"HX-Request": "true"})
         self.assertIn("Listo", rule.text)

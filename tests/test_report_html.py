@@ -73,6 +73,10 @@ class FormatAmountTests(unittest.TestCase):
     def test_usd(self):
         self.assertEqual(format_amount(1234.5, "USD"), "US$1.234,50")
 
+    def test_negative_sign_goes_first(self):
+        self.assertEqual(format_amount(-38000), "-$38.000")
+        self.assertEqual(format_amount(-9.99, "USD"), "-US$9,99")
+
     def test_invalid(self):
         self.assertEqual(format_amount("abc"), "$0")
 

@@ -1,147 +1,204 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}Pendientes{% endblock %}
-{% block content %}
-<h1>Compras sin pago</h1>
-
-<form class="filters" method="get" action="/pending">
-    <label>Desde <input type="date" name="start" value="{{ start or '' }}" onchange="this.form.submit()"></label>
-    <label>Hasta <input type="date" name="end" value="{{ end or '' }}" onchange="this.form.submit()"></label>
-    <noscript><button type="submit">Filtrar</button></noscript>
+{% block heading %}Pendientes{% endblock %}
+{% block subheading %}Compras de 1 cuota sin un pago asociado{% endblock %}
+{% block actions %}
+<form class="inline-form" method="get" action="/pending">
+    <label class="field">Desde <input type="date" name="start" value="{{ start or '' }}" onchange="this.form.submit()"></label>
+    <label class="field">Hasta <input type="date" name="end" value="{{ end or '' }}" onchange="this.form.submit()"></label>
+    <noscript><button class="btn secondary" type="submit">Filtrar</button></noscript>
 </form>
+{% endblock %}
 
+{% block content %}
 {% if not has_history %}
-<div class="notice">Aún no hay movimientos. <a href="/upload">Sube una descarga del banco</a> para empezar.</div>
+<div class="card empty-state">
+    <div class="row-icon">{{ icon("upload") }}</div>
+    <h3>Aún no hay movimientos</h3>
+    <p>Sube una descarga del banco para empezar.</p>
+    <a class="btn" href="/upload">{{ icon("upload") }}Subir descarga</a>
+</div>
 {% elif not results %}
 <div class="notice">No hay movimientos en las fechas elegidas.</div>
 {% endif %}
 
 {% if results | selectattr('total_unpaid') | list %}
-<details class="card share">
-    <summary>Copiar o descargar la lista</summary>
-    <textarea id="copy-text" rows="6" readonly>{{ copy_text }}</textarea>
-    <div class="row-actions">
-        <button type="button" onclick="navigator.clipboard.writeText(document.getElementById('copy-text').value).then(() => { this.textContent = '¡Copiado!'; })">Copiar lista</button>
-        <a class="button secondary" href="{{ csv_url }}">Descargar CSV</a>
+<details class="card disclosure-card" style="margin-bottom:16px">
+    <summary class="split"><span>{{ icon("copy") }} Copiar o descargar la lista de pendientes</span></summary>
+    <textarea id="copy-text" rows="6" readonly class="mt">{{ copy_text }}</textarea>
+    <div class="inline-form mt">
+        <button type="button" class="btn" onclick="navigator.clipboard.writeText(document.getElementById('copy-text').value).then(() => { this.lastChild.textContent = '¡Copiado!'; })">{{ icon("copy") }}<span>Copiar lista</span></button>
+        <a class="btn secondary" href="{{ csv_url }}">{{ icon("download") }}Descargar CSV</a>
     </div>
 </details>
 {% endif %}
 
 {% for result in results %}
 {% set currency = result.currency %}
-{% if results | length > 1 or currency != 'CLP' %}<h2>{{ currency_names.get(currency, currency) }}</h2>{% endif %}
+{% if results | length > 1 or currency != 'CLP' %}<h2 class="section-title">{{ currency_names.get(currency, currency) }}</h2>{% endif %}
+
 {% set u = upcoming.get(currency) %}
-{% if u %}
-<div class="card hero upcoming">
-    <h3>A pagar en la próxima facturación</h3>
-    <p class="value">{{ u.amount | money(currency) }}</p>
-    <p class="meta">
-        {% if u.count %}{{ u.count }} {{ 'compra' if u.count == 1 else 'compras' }} desde el {{ u.since | date }}{% else %}Sin compras por facturar{% endif %}
-        · según tu descarga del {{ u.seen_at | date }}. Es lo que aparece como no facturado en el banco; descarga de nuevo para actualizarlo.
-    </p>
-</div>
-{% endif %}
-<div class="cards">
-    <div class="card"><h3>Sin pagar</h3><p class="value {{ 'danger' if result.total_unpaid else 'success' }}">{{ result.total_unpaid | money(currency) }}</p></div>
-    <div class="card"><h3>Compras sin pago</h3><p class="value">{{ result.unpaid | length }} de {{ (result.unpaid | length) + (result.matches | length) + (result.resolved | length) }}</p></div>
-    <div class="card"><h3>Pagos</h3><p class="value">{{ result.total_payments | money(currency) }}</p></div>
-    <div class="card"><h3>Compras (1 cuota)</h3><p class="value">{{ result.total_purchases | money(currency) }}</p></div>
+<div class="kpis">
+    {% if u %}
+    <div class="card kpi">
+        <div class="kpi-label">{{ icon("dollar") }}A pagar en la próxima facturación</div>
+        <div class="kpi-value hero">{{ u.amount | money(currency) }}</div>
+        <div class="kpi-meta">
+            {% if u.count %}{{ u.count }} {{ 'compra' if u.count == 1 else 'compras' }} desde el {{ u.since | date }}{% else %}Sin compras por facturar{% endif %}
+            · según tu descarga del {{ u.seen_at | date }}
+        </div>
+    </div>
+    {% endif %}
+    <div class="card kpi">
+        <div class="kpi-label">{{ icon("clock") }}Sin pagar</div>
+        <div class="kpi-value {{ 'text-danger' if result.total_unpaid }}">{{ result.total_unpaid | money(currency) }}</div>
+        <div class="kpi-meta">{{ result.unpaid | length }} de {{ (result.unpaid | length) + (result.matches | length) + (result.resolved | length) }} compras</div>
+    </div>
+    <div class="card kpi">
+        <div class="kpi-label">{{ icon("card") }}Pagos</div>
+        <div class="kpi-value">{{ result.total_payments | money(currency) }}</div>
+        <div class="kpi-meta">Compras de 1 cuota: {{ result.total_purchases | money(currency) }}</div>
+    </div>
 </div>
 
 {% if result.suggestions %}
-<h2>Posibles pagos agrupados</h2>
-<p class="muted">Pagos que equivalen a la suma de varias compras pendientes. Confirma la que corresponda: nada se aplica solo.</p>
-<ul class="list">
-    {% for suggestion in result.suggestions %}
-    {% set payment = suggestion.payment %}
-    <li class="stack">
-        <div class="split">
-            <div>
-                <div class="desc">{{ payment['Description'] }}</div>
-                <div class="meta">{{ payment['Date'] | date }}{% if suggestion.ambiguous %} · <span class="tag warning">{{ suggestion.options | length }} combinaciones posibles</span>{% endif %}</div>
-            </div>
-            <div class="amount">{{ payment['Amount'] | money(currency) }}</div>
+<section class="card" style="margin-bottom:16px">
+    <div class="card-head">
+        <div>
+            <h2 class="card-title">Posibles pagos agrupados</h2>
+            <div class="card-sub">Pagos que equivalen a la suma de varias compras pendientes. Nada se aplica solo: confirma la que corresponda.</div>
         </div>
-        {% for option in suggestion.options %}
-        <form class="option" method="post" action="/payments/{{ payment['Id'] }}/accept-group">
-            <input type="hidden" name="next" value="{{ back_url }}">
-            <span>= {% for p in option %}{{ p['Description'] }} {{ p['Amount'] | money(currency) }} ({{ p['Date'].strftime('%d/%m') }}){{ ' + ' if not loop.last }}{% endfor %}</span>
-            {% for p in option %}<input type="hidden" name="purchase_ids" value="{{ p['Id'] }}">{% endfor %}
-            <button type="submit" class="small">Aceptar</button>
-        </form>
+    </div>
+    <ul class="rows">
+        {% for suggestion in result.suggestions %}
+        {% set payment = suggestion.payment %}
+        <li class="stack">
+            <div class="split">
+                <div class="row-with-icon">
+                    <div class="row-icon">{{ icon("layers") }}</div>
+                    <div class="row-main">
+                        <div class="row-title">{{ payment['Description'] }}</div>
+                        <div class="row-meta">{{ payment['Date'] | date }}{% if suggestion.ambiguous %}<span class="badge warning">{{ suggestion.options | length }} combinaciones posibles</span>{% endif %}</div>
+                    </div>
+                </div>
+                <div class="row-amount">{{ payment['Amount'] | money(currency) }}</div>
+            </div>
+            {% for option in suggestion.options %}
+            <form class="inline-form" method="post" action="/payments/{{ payment['Id'] }}/accept-group">
+                <input type="hidden" name="next" value="{{ back_url }}">
+                <span class="small" style="flex:1 1 220px">= {% for p in option %}{{ p['Description'] }} <strong>{{ p['Amount'] | money(currency) }}</strong> ({{ p['Date'].strftime('%d/%m') }}){{ ' + ' if not loop.last }}{% endfor %}</span>
+                {% for p in option %}<input type="hidden" name="purchase_ids" value="{{ p['Id'] }}">{% endfor %}
+                <button type="submit" class="btn sm">{{ icon("check") }}Aceptar</button>
+            </form>
+            {% endfor %}
+            <form method="post" action="/payments/{{ payment['Id'] }}/dismiss">
+                <input type="hidden" name="next" value="{{ back_url }}">
+                <button type="submit" class="btn ghost sm">Ninguna corresponde</button>
+            </form>
+        </li>
         {% endfor %}
-        <form method="post" action="/payments/{{ payment['Id'] }}/dismiss">
-            <input type="hidden" name="next" value="{{ back_url }}">
-            <button type="submit" class="small secondary">Ninguna corresponde</button>
-        </form>
-    </li>
-    {% endfor %}
-</ul>
+    </ul>
+</section>
 {% endif %}
 
-<h2>Pendientes</h2>
-<ul class="list">
-    {% for row in result.unpaid.to_dict('records') %}
-    <li class="stack">
-        <div class="split">
+<div class="grid">
+    <section class="card {{ 'span-8' if age_charts.get(currency) else 'span-12' }}">
+        <div class="card-head">
             <div>
-                <div class="desc">{{ row['Description'] }}</div>
-                <div class="meta">{{ row['Date'] | date }}{% if row['City'] %} · {{ row['City'] }}{% endif %} · hace {{ row['Age'] }} {{ 'día' if row['Age'] == 1 else 'días' }}</div>
+                <h2 class="card-title">Compras sin pago</h2>
+                <div class="card-sub">De la más antigua a la más nueva</div>
             </div>
-            <div class="amount danger">{{ row['Amount'] | money(currency) }}</div>
         </div>
-        <details class="resolve">
-            <summary>Resolver a mano</summary>
-            <form method="post" action="/movements/{{ row['Id'] }}/resolve">
-                <input type="hidden" name="next" value="{{ back_url }}">
-                <input type="text" name="reason" placeholder="Motivo (ej. pagado por transferencia)" maxlength="200">
-                <div class="row-actions">
-                    <button type="submit" name="status" value="paid" class="small">Marcar pagada</button>
-                    <button type="submit" name="status" value="ignored" class="small secondary">Ignorar</button>
+        <ul class="rows">
+            {% for row in result.unpaid.to_dict('records') %}
+            <li class="stack">
+                <div class="split">
+                    <div class="row-main">
+                        <div class="row-title">{{ row['Description'] }}</div>
+                        <div class="row-meta">
+                            <span>{{ row['Date'] | date }}</span>{% if row['City'] %}<span>· {{ row['City'] }}</span>{% endif %}
+                            <span class="badge {{ 'danger' if row['Age'] > 30 else 'warning' if row['Age'] > 7 else '' }}">hace {{ row['Age'] }} {{ 'día' if row['Age'] == 1 else 'días' }}</span>
+                        </div>
+                    </div>
+                    <div class="row-amount">{{ row['Amount'] | money(currency) }}</div>
                 </div>
-            </form>
-        </details>
-    </li>
-    {% else %}
-    <li class="empty">Todas las compras de 1 cuota tienen un pago asociado.</li>
-    {% endfor %}
-</ul>
+                <details class="disclosure">
+                    <summary>Resolver a mano</summary>
+                    <form class="inline-form" method="post" action="/movements/{{ row['Id'] }}/resolve">
+                        <input type="hidden" name="next" value="{{ back_url }}">
+                        <input type="text" name="reason" placeholder="Motivo (ej. pagado por transferencia)" maxlength="200" style="flex:1 1 220px">
+                        <button type="submit" name="status" value="paid" class="btn sm">{{ icon("check") }}Marcar pagada</button>
+                        <button type="submit" name="status" value="ignored" class="btn secondary sm">Ignorar</button>
+                    </form>
+                </details>
+            </li>
+            {% else %}
+            <li><div class="empty-state" style="width:100%"><div class="row-icon">{{ icon("check-circle") }}</div><p>Todas las compras de 1 cuota tienen un pago asociado.</p></div></li>
+            {% endfor %}
+        </ul>
+    </section>
+    {% if age_charts.get(currency) %}
+    <section class="card span-4 keep fit">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Por antigüedad</h2>
+                <div class="card-sub">Cuánto lleva esperando un pago</div>
+            </div>
+        </div>
+        {{ age_charts[currency] }}
+    </section>
+    {% endif %}
+</div>
 
 {% if not result.orphan_payments.empty %}
-<h2>Pagos sin compra asociada</h2>
-<p class="muted">No calzan con ninguna compra del mismo monto en los días previos. Pueden cubrir varias compras juntas o una compra fuera del historial.</p>
-<ul class="list">
-    {% for row in result.orphan_payments.to_dict('records') %}
-    <li class="stack">
-        <div class="split">
-            <div>
-                <div class="desc">{{ row['Description'] }}</div>
-                <div class="meta">{{ row['Date'] | date }}</div>
-            </div>
-            <div class="amount warning">{{ row['Amount'] | money(currency) }}</div>
+<section class="card" style="margin-bottom:16px">
+    <div class="card-head">
+        <div>
+            <h2 class="card-title">Pagos sin compra asociada</h2>
+            <div class="card-sub">No calzan con ninguna compra. Pueden cubrir varias compras o una compra fuera del historial.</div>
         </div>
-        <details class="resolve">
-            <summary>Ignorar este pago</summary>
-            <form method="post" action="/movements/{{ row['Id'] }}/resolve">
-                <input type="hidden" name="next" value="{{ back_url }}">
-                <input type="text" name="reason" placeholder="Motivo (ej. pago de otra tarjeta)" maxlength="200">
-                <button type="submit" name="status" value="ignored" class="small secondary">Ignorar</button>
-            </form>
-        </details>
-    </li>
-    {% endfor %}
-</ul>
+    </div>
+    <ul class="rows">
+        {% for row in result.orphan_payments.to_dict('records') %}
+        <li class="stack">
+            <div class="split">
+                <div class="row-main">
+                    <div class="row-title">{{ row['Description'] }}</div>
+                    <div class="row-meta">{{ row['Date'] | date }}</div>
+                </div>
+                <div class="row-amount text-warning">{{ row['Amount'] | money(currency) }}</div>
+            </div>
+            <details class="disclosure">
+                <summary>Ignorar este pago</summary>
+                <form class="inline-form" method="post" action="/movements/{{ row['Id'] }}/resolve">
+                    <input type="hidden" name="next" value="{{ back_url }}">
+                    <input type="text" name="reason" placeholder="Motivo (ej. pago de otra tarjeta)" maxlength="200" style="flex:1 1 220px">
+                    <button type="submit" name="status" value="ignored" class="btn secondary sm">Ignorar</button>
+                </form>
+            </details>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
 {% endif %}
 
 {% if not result.matches.empty %}
-<details class="card">
-    <summary>Compras pagadas y su pago ({{ result.matches | length }})</summary>
-    <div class="table-wrap flat">
-        <table>
+<details class="card flush" style="margin-bottom:16px">
+    <summary class="card-head" style="padding:18px 20px">
+        <div>
+            <h2 class="card-title">Compras pagadas y su pago ({{ result.matches | length }})</h2>
+            <div class="card-sub">Qué pago cubrió cada compra y cuántos días tardó</div>
+        </div>
+        <span class="link small">Ver</span>
+    </summary>
+    <div class="table-wrap">
+        <table class="data">
             <thead><tr><th>Compra</th><th>Fecha</th><th class="num">Monto</th><th>Pago</th><th>Fecha pago</th><th class="num">Días</th></tr></thead>
             <tbody>
                 {% for m in result.matches.to_dict('records') %}
                 <tr><td class="desc">{{ m['Description'] }}</td><td>{{ m['Date'] | date }}</td><td class="num">{{ m['Amount'] | money(currency) }}</td>
-                    <td class="desc">{{ m['Payment Description'] }}</td><td>{{ m['Payment Date'] | date }}</td><td class="num">{{ m['Days To Pay'] }}</td></tr>
+                    <td>{{ m['Payment Description'] }}</td><td>{{ m['Payment Date'] | date }}</td><td class="num">{{ m['Days To Pay'] }}</td></tr>
                 {% endfor %}
             </tbody>
         </table>
@@ -150,30 +207,33 @@
 {% endif %}
 
 {% if not result.resolved.empty or not result.ignored_payments.empty %}
-<details class="card">
-    <summary>Resueltas a mano ({{ (result.resolved | length) + (result.ignored_payments | length) }})</summary>
-    <ul class="list flat">
+<details class="card" style="margin-bottom:16px">
+    <summary class="split">
+        <span class="card-title">Resueltas a mano ({{ (result.resolved | length) + (result.ignored_payments | length) }})</span>
+        <span class="link small">Ver</span>
+    </summary>
+    <ul class="rows mt">
         {% for r in result.resolved.to_dict('records') %}
         <li>
-            <div>
-                <div class="desc">{{ r['Description'] }} · {{ r['Amount'] | money(currency) }}</div>
-                <div class="meta">{{ r['Date'] | date }} · {{ status_labels[r['Status']] }}{% if r['Reason'] %} · {{ r['Reason'] }}{% endif %}{% if r['Payment Description'] %} · con {{ r['Payment Description'] }}{% endif %}</div>
+            <div class="row-main">
+                <div class="row-title">{{ r['Description'] }} · {{ r['Amount'] | money(currency) }}</div>
+                <div class="row-meta">{{ r['Date'] | date }}<span class="badge {{ 'success' if r['Status'] == 'paid' else '' }}">{{ status_labels[r['Status']] }}</span>{% if r['Reason'] %}{{ r['Reason'] }}{% endif %}{% if r['Payment Description'] %} · con {{ r['Payment Description'] }}{% endif %}</div>
             </div>
             <form method="post" action="/movements/{{ r['Id'] }}/unresolve">
                 <input type="hidden" name="next" value="{{ back_url }}">
-                <button type="submit" class="small secondary">Deshacer</button>
+                <button type="submit" class="btn ghost sm">Deshacer</button>
             </form>
         </li>
         {% endfor %}
         {% for r in result.ignored_payments.to_dict('records') %}
         <li>
-            <div>
-                <div class="desc">{{ r['Description'] }} · {{ r['Amount'] | money(currency) }}</div>
-                <div class="meta">{{ r['Date'] | date }} · Pago ignorado</div>
+            <div class="row-main">
+                <div class="row-title">{{ r['Description'] }} · {{ r['Amount'] | money(currency) }}</div>
+                <div class="row-meta">{{ r['Date'] | date }}<span class="badge">Pago ignorado</span></div>
             </div>
             <form method="post" action="/movements/{{ r['Id'] }}/unresolve">
                 <input type="hidden" name="next" value="{{ back_url }}">
-                <button type="submit" class="small secondary">Deshacer</button>
+                <button type="submit" class="btn ghost sm">Deshacer</button>
             </form>
         </li>
         {% endfor %}

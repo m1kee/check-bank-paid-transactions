@@ -1,13 +1,15 @@
 """Installments (12), subscriptions (15), alerts (16), export (19), charts (14) and the insights that join them."""
 import datetime
+import json
 import unittest
+from html import unescape
 
 import pandas as pd
 
 from bankcheck import alerts, charts, export, installments, recurring
 from bankcheck.analysis import analyze
-from bankcheck.categories import default_rules
-from bankcheck.formatting import format_amount
+from bankcheck.categories import category_history, default_rules, with_categories
+from bankcheck.formatting import compact_amount, format_amount
 from bankcheck.insights import build_insights, pending_by_age
 from tests.helpers import movements
 
@@ -140,6 +142,43 @@ class ChartTests(unittest.TestCase):
         self.assertIn("previous", html)
 
 
+class DashboardChartTests(unittest.TestCase):
+    def test_nice_axis_top(self):
+        self.assertEqual([charts.nice_max(v) for v in (0, 7, 23, 180, 2600, 410000)], [1, 10, 25, 200, 5000, 500000])
+
+    def test_compact_amounts_for_axes(self):
+        self.assertEqual([compact_amount(v) for v in (950, 1500, 45000, 1234567)], ["$950", "$1,5K", "$45K", "$1,2M"])
+        self.assertEqual(compact_amount(120.5, "USD"), "US$120")
+
+    def test_line_with_gaps_and_tooltip_data(self):
+        html = charts.line(
+            [("1", "Día 1"), ("2", "Día 2"), ("3", "Día 3")],
+            [{"name": "octubre", "role": "series", "values": [10, 20, None], "area": True},
+             {"name": "septiembre", "role": "previous", "values": [5, 15, 25]}],
+            format_amount, reference=(30, "Presupuesto"),
+        )
+        self.assertIn('class="area"', html)
+        self.assertIn("viz-ref", html)
+        self.assertIn("viz-legend", html)
+        data = json.loads(unescape(html.split('data-chart="')[1].split('"')[0]))
+        self.assertEqual(data["x"], ["Día 1", "Día 2", "Día 3"])
+        self.assertEqual(data["series"][0]["v"], ["$10", "$20", None])
+
+    def test_line_needs_data(self):
+        self.assertIn("Sin datos", charts.line([("1", "a"), ("2", "b")], [{"name": "x", "role": "series", "values": [None, None]}], format_amount))
+
+    def test_columns_emphasis_grays_out_the_rest(self):
+        html = charts.columns([("a", 1, "A"), ("b", 2, "B")], format_amount, emphasis=1)
+        self.assertEqual(html.count('viz-col context"'), 1)
+
+    def test_sparkline(self):
+        self.assertEqual(charts.sparkline([5]), "")
+        self.assertIn("<path", charts.sparkline([1, 3, 2]))
+
+    def test_bars_share(self):
+        self.assertIn("75%", charts.bars([("A", 75), ("B", 25)], format_amount, share=True))
+
+
 class BuildInsightsTests(unittest.TestCase):
     def test_spending_compares_with_previous_month(self):
         df = movements([("2026-09-10", "LIDER", 10000), ("2026-10-10", "LIDER", 25000), ("2026-10-11", "UBER TRIP", 5000)])
@@ -148,6 +187,20 @@ class BuildInsightsTests(unittest.TestCase):
         self.assertEqual(insights.total_spent, 30000)
         self.assertEqual(insights.previous_spent, 10000)
         self.assertEqual(insights.spending["Category"].iloc[0], "Supermercado")
+
+    def test_monthly_totals_and_pace(self):
+        df = movements([("2026-09-10", "LIDER", 10000), ("2026-10-02", "LIDER", 25000), ("2026-10-05", "UBER TRIP", 5000)])
+        insights = build_insights(df, default_rules(), today=datetime.date(2026, 10, 4))
+        self.assertEqual(len(insights.monthly), 12)
+        self.assertEqual(insights.monthly["Amount"].tolist()[-2:], [10000, 30000])
+        # Days still to come have no pace yet
+        self.assertEqual(insights.pace[:4], [0, 25000, 25000, 25000])
+        self.assertIsNone(insights.pace[4])
+        self.assertEqual(insights.previous_pace[-1], 10000)
+
+    def test_category_history(self):
+        df = with_categories(movements([("2026-09-10", "LIDER", 10000), ("2026-10-02", "LIDER", 25000)]), default_rules())
+        self.assertEqual(category_history(df, pd.Period("2026-10", "M"), months=3)["Supermercado"], [0, 10000, 25000])
 
     def test_pending_by_age(self):
         [result] = analyze(movements([("2026-10-20", "A", 1000), ("2026-10-01", "B", 2000), ("2026-08-01", "C", 4000)]))

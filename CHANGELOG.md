@@ -6,6 +6,24 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.9.0] - 2026-10-22
+
+### Added
+- Rediseño de la app web como dashboard: barra lateral con íconos (barra superior en el celular), encabezado de página con acciones, tarjetas de indicadores con variación y mini-tendencia, grilla de tarjetas, estados vacíos, tema claro/oscuro con botón (recuerda la elección) y la tipografía Inter incluida en la app.
+- Gráficos nuevos en el Resumen: **ritmo del mes** (gasto acumulado día a día vs el mes anterior, con el presupuesto total como referencia), **últimos 12 meses** con el mes elegido destacado, mini-tendencia de 6 meses del gasto y proyección de cuotas.
+- Tooltips en todos los gráficos (`static/charts.js`): línea vertical que sigue al cursor en los gráficos de línea y valor por barra. Sin JavaScript se mantienen los tooltips nativos.
+- Ejes con valores compactos ($45K, $1,2M) y porcentaje de cada categoría sobre el total.
+- Categorías: tendencia de 6 meses por categoría y barra de presupuesto en la tabla.
+- Suscripciones: tendencia del monto de cada cobro. Cuotas: barra de avance por compra.
+- Subir: zona para soltar archivos y lista de las últimas descargas importadas.
+
+### Changed
+- "Inicio" pasa a llamarse "Resumen".
+- Los montos negativos se muestran con el signo antes del símbolo (`-$38.000` en vez de `$-38.000`).
+
+### Fixed
+- En modo oscuro, los botones principales tenían poco contraste.
+
 ## [0.8.0] - 2026-10-21
 
 ### Added
@@ -129,7 +147,8 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.0...HEAD
+[0.9.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.8.0...v0.9.0
 [0.8.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.5.0...v0.6.0

@@ -21,3 +21,5 @@ Agregar al HTML (sin servidor; con SVG generado en Python o con una librería JS
 
 ## Estado (v0.6.0)
 Gasto por día (no por semana), gasto por categoría comparado con el mes anterior y pendiente por antigüedad, en la web (Inicio) y en el reporte. Barras en HTML/CSS con colores validados para daltonismo en modo claro y oscuro, con tooltip y tabla al lado.
+
+v0.9.0: rediseño como dashboard, con ritmo del mes (línea acumulada vs el mes anterior y el presupuesto), tendencia de 12 meses, mini-tendencias en las tarjetas de indicadores y tooltips con línea vertical. La comparación con el mes anterior (punto 4) ya está.

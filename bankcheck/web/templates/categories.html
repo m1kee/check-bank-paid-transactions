@@ -1,99 +1,148 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}Categorías{% endblock %}
+{% block heading %}Categorías{% endblock %}
+{% block subheading %}Gasto de {{ month | month_name }}, presupuestos y reglas{% endblock %}
 {% block content %}
-<h1>Categorías y presupuestos</h1>
+{% if error %}<div class="notice error">{{ icon("alert") }}<div>{{ error }}</div></div>{% endif %}
 
-{% if error %}<div class="notice error">{{ error }}</div>{% endif %}
-
-<p class="muted">Gasto de {{ month | month_name }}. El presupuesto es mensual y en pesos; déjalo vacío para no usarlo.</p>
-<ul class="list">
-    {% for c in categories %}
-    <li class="stack">
-        <form class="category-form" method="post" action="/categories/{{ c.id }}">
-            <label>Nombre <input type="text" name="name" value="{{ c.name }}" required maxlength="60"></label>
-            <label>Presupuesto <input type="number" name="budget" value="{{ c.budget | int if c.budget else '' }}" min="0" step="1000" placeholder="Sin presupuesto"></label>
-            <button type="submit" class="small">Guardar</button>
-        </form>
-        <div class="meta">
-            Gastado: {{ spent.get(c.name, 0) | money }} · {{ c.rule_count }} {{ 'regla' if c.rule_count == 1 else 'reglas' }} ·
-            <a href="/movements?category={{ c.name | urlencode }}">ver movimientos</a>
-        </div>
-        <form method="post" action="/categories/{{ c.id }}/delete" onsubmit="return confirm('¿Borrar esta categoría y sus reglas? Sus movimientos volverán a categorizarse con las demás reglas.')">
-            <button type="submit" class="small secondary">Borrar</button>
-        </form>
-    </li>
-    {% endfor %}
-</ul>
-
-<h2>Nueva categoría</h2>
-<form class="card category-form" method="post" action="/categories">
-    <label>Nombre <input type="text" name="name" required maxlength="60"></label>
-    <label>Presupuesto <input type="number" name="budget" min="0" step="1000" placeholder="Opcional"></label>
-    <button type="submit">Crear</button>
-</form>
-
-<h2>Unir categorías</h2>
-<form class="card category-form" method="post" action="/categories/merge">
-    <label>Mover todo de
-        <select name="source_id">{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
-    </label>
-    <label>a
-        <select name="target_id">{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
-    </label>
-    <button type="submit">Unir</button>
-</form>
-
-<h2>Sin categoría</h2>
-{% if uncategorized %}
-<p class="muted">Los comercios sin categoría que más se repiten. Crea una regla y todos sus movimientos (pasados y futuros) quedarán categorizados.</p>
-<ul class="list">
-    {% for u in uncategorized %}
-    <li class="stack">
-        <div class="split">
+<div class="grid">
+    <section class="card flush span-8">
+        <div class="card-head">
             <div>
-                <div class="desc">{{ u['Example'] }}</div>
-                <div class="meta">{{ u['Count'] }} {{ 'movimiento' if u['Count'] == 1 else 'movimientos' }}</div>
+                <h2 class="card-title">Categorías</h2>
+                <div class="card-sub">El presupuesto es mensual y en pesos; déjalo vacío para no usarlo</div>
             </div>
-            <div class="amount">{{ u['Amount'] | money(u['Currency']) }}</div>
         </div>
-        <form class="option" method="post" action="/rules">
-            <input type="hidden" name="next" value="/categories">
-            <input type="text" name="pattern" value="{{ u['Example'] | suggest_pattern }}" aria-label="Texto de la regla" required>
-            <select name="category_id" aria-label="Categoría">{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
-            <button type="submit" class="small">Crear regla</button>
-        </form>
-    </li>
-    {% endfor %}
-</ul>
-{% else %}
-<div class="notice">Todos los movimientos tienen categoría.</div>
-{% endif %}
+        <div class="table-wrap">
+            <table class="data">
+                <thead><tr><th>Categoría</th><th class="hide-phone">6 meses</th><th class="num">{{ month | month_name }}</th><th style="min-width:150px">Presupuesto</th><th></th></tr></thead>
+                <tbody>
+                    {% for c in categories %}
+                    {% set spent_now = spent.get(c.name, 0) %}
+                    <tr>
+                        <td>
+                            <a class="row-title" href="/movements?category={{ c.name | urlencode }}">{{ c.name }}</a>
+                            <div class="muted small">{{ c.rule_count }} {{ 'regla' if c.rule_count == 1 else 'reglas' }}</div>
+                        </td>
+                        <td class="hide-phone" style="width:120px">{{ sparkline(history.get(c.name, []), "Gasto de los últimos 6 meses") }}</td>
+                        <td class="num"><strong>{{ spent_now | money }}</strong></td>
+                        <td>
+                            {% if c.budget %}
+                            {% set ratio = spent_now / c.budget %}
+                            {% set status = 'over' if ratio >= 1 else 'warning' if ratio >= 0.8 or ratio > month_ratio else 'ok' %}
+                            {{ meter(ratio, month_ratio, status, c.name ~ ': ' ~ (spent_now | money) ~ ' de ' ~ (c.budget | money)) }}
+                            <div class="muted small" style="margin-top:4px">{{ (ratio * 100) | round | int }}% de {{ c.budget | money }}</div>
+                            {% else %}<span class="muted small">Sin presupuesto</span>{% endif %}
+                        </td>
+                        <td class="num">
+                            <details class="disclosure">
+                                <summary>Editar</summary>
+                                <form class="inline-form" method="post" action="/categories/{{ c.id }}" style="min-width:240px;justify-content:flex-end">
+                                    <label class="field">Nombre <input type="text" name="name" value="{{ c.name }}" required maxlength="60"></label>
+                                    <label class="field">Presupuesto <input type="number" name="budget" value="{{ c.budget | int if c.budget else '' }}" min="0" step="1000" placeholder="Sin presupuesto"></label>
+                                    <button type="submit" class="btn sm">Guardar</button>
+                                </form>
+                                <form method="post" action="/categories/{{ c.id }}/delete" class="mt" onsubmit="return confirm('¿Borrar esta categoría y sus reglas? Sus movimientos volverán a categorizarse con las demás reglas.')">
+                                    <button type="submit" class="btn ghost sm text-danger">Borrar categoría</button>
+                                </form>
+                            </details>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </section>
 
-<h2>Reglas</h2>
-<p class="muted">Si la descripción contiene el texto, el movimiento queda en esa categoría. Cuando varias reglas coinciden, gana la más larga (UBER EATS le gana a UBER). No importan mayúsculas ni tildes.</p>
-<form class="card category-form" method="post" action="/rules">
-    <label>Si la descripción contiene <input type="text" name="pattern" required minlength="3" maxlength="60"></label>
-    <label>Categoría
-        <select name="category_id">{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
-    </label>
-    <button type="submit">Agregar regla</button>
-</form>
-<div class="table-wrap">
-    <table>
-        <thead><tr><th>Texto</th><th>Categoría</th><th></th></tr></thead>
-        <tbody>
-            {% for r in rules %}
-            <tr>
-                <td>{{ r.pattern }}</td>
-                <td>{{ r.category }}</td>
-                <td class="num">
-                    <form method="post" action="/rules/{{ r.id }}/delete"><button type="submit" class="small secondary">Quitar</button></form>
-                </td>
-            </tr>
-            {% else %}
-            <tr><td colspan="3" class="muted">No hay reglas.</td></tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="span-4 keep" style="display:flex;flex-direction:column;gap:16px">
+        <section class="card">
+            <div class="card-head"><div><h2 class="card-title">Nueva categoría</h2></div></div>
+            <form class="inline-form" method="post" action="/categories">
+                <label class="field">Nombre <input type="text" name="name" required maxlength="60"></label>
+                <label class="field">Presupuesto <input type="number" name="budget" min="0" step="1000" placeholder="Opcional"></label>
+                <button type="submit" class="btn">Crear</button>
+            </form>
+        </section>
+        <section class="card">
+            <div class="card-head"><div><h2 class="card-title">Unir categorías</h2><div class="card-sub">Mueve reglas y movimientos, y borra la primera</div></div></div>
+            <form class="inline-form" method="post" action="/categories/merge">
+                <label class="field">Mover todo de
+                    <select name="source_id">{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+                </label>
+                <label class="field">a
+                    <select name="target_id">{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+                </label>
+                <button type="submit" class="btn secondary">Unir</button>
+            </form>
+        </section>
+    </div>
 </div>
+
+<section class="card" style="margin-bottom:16px">
+    <div class="card-head">
+        <div>
+            <h2 class="card-title">Sin categoría</h2>
+            <div class="card-sub">Los comercios sin categoría que más se repiten. Una regla categoriza todos sus movimientos, pasados y futuros.</div>
+        </div>
+    </div>
+    {% if uncategorized %}
+    <ul class="rows">
+        {% for u in uncategorized %}
+        <li class="stack">
+            <div class="split">
+                <div class="row-main">
+                    <div class="row-title">{{ u['Example'] }}</div>
+                    <div class="row-meta">{{ u['Count'] }} {{ 'movimiento' if u['Count'] == 1 else 'movimientos' }}</div>
+                </div>
+                <div class="row-amount">{{ u['Amount'] | money(u['Currency']) }}</div>
+            </div>
+            <form class="inline-form" method="post" action="/rules">
+                <input type="hidden" name="next" value="/categories">
+                <input type="text" name="pattern" value="{{ u['Example'] | suggest_pattern }}" aria-label="Texto de la regla" required style="flex:1 1 160px">
+                <select name="category_id" aria-label="Categoría" style="flex:1 1 140px">{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+                <button type="submit" class="btn sm">Crear regla</button>
+            </form>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="empty-state"><div class="row-icon">{{ icon("check-circle") }}</div><p>Todos los movimientos tienen categoría.</p></div>
+    {% endif %}
+</section>
+
+<details class="card flush">
+    <summary class="card-head" style="padding:18px 20px">
+        <div>
+            <h2 class="card-title">Reglas ({{ rules | length }})</h2>
+            <div class="card-sub">Si la descripción contiene el texto, el movimiento queda en esa categoría. Gana la más larga (UBER EATS le gana a UBER); no importan mayúsculas ni tildes.</div>
+        </div>
+        <span class="link small">Ver</span>
+    </summary>
+    <form class="inline-form" method="post" action="/rules" style="padding:0 20px 16px">
+        <label class="field">Si la descripción contiene <input type="text" name="pattern" required minlength="3" maxlength="60"></label>
+        <label class="field">Categoría
+            <select name="category_id">{% for c in categories %}<option value="{{ c.id }}">{{ c.name }}</option>{% endfor %}</select>
+        </label>
+        <button type="submit" class="btn">Agregar regla</button>
+    </form>
+    <div class="table-wrap">
+        <table class="data">
+            <thead><tr><th>Texto</th><th>Categoría</th><th></th></tr></thead>
+            <tbody>
+                {% for r in rules %}
+                <tr>
+                    <td><code>{{ r.pattern }}</code></td>
+                    <td>{{ r.category }}</td>
+                    <td class="num">
+                        <form method="post" action="/rules/{{ r.id }}/delete"><button type="submit" class="btn ghost sm">Quitar</button></form>
+                    </td>
+                </tr>
+                {% else %}
+                <tr><td colspan="3" class="muted">No hay reglas.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</details>
 {% endblock %}

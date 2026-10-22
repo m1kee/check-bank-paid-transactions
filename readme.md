@@ -17,7 +17,7 @@ Current version: see [`CHANGELOG.md`](CHANGELOG.md) · Roadmap: [`feature-propos
 * **Manual reconciliation:** mark a purchase as paid or ignored (with a reason), or ignore a payment; stored in the history and undoable.
 * **Grouped payments:** a payment equal to the sum of 2–4 unpaid purchases is *suggested* (never applied on its own) so you can accept it.
 * **Categories and budgets:** every movement gets a category from editable rules (the longest match wins); change one in the web app and it offers to learn a rule. Monthly budgets per category show whether you're ahead of the month's pace.
-* **Charts:** spending by day and by category (vs the previous month), and pending amount by age; plain HTML/CSS, offline.
+* **Dashboard:** KPI tiles with deltas and trends, month pace (cumulative spending vs last month and the budget), 12-month trend, spending by day and by category, pending by age, installment projection. Charts are plain HTML/CSS/SVG with tooltips, work offline, in light and dark mode.
 * **Installments, subscriptions and alerts:** remaining debt per installment purchase and a 12-month projection; recurring monthly charges with price increases; possible duplicates, unusual amounts and new merchants/cities.
 * **Share the pending list:** copy it as text (ready for WhatsApp) or download a CSV, from the web app, the HTML report or `--export`.
 * **HTML report:** self-contained dark-mode page that works offline and opens in the browser.
@@ -138,7 +138,7 @@ uv run bankcheck-web --reload           # restart on code changes (development)
 ```
 
 Pages:
-* **Inicio** (`/dashboard`): spending of the month vs the previous one, budgets, alerts and charts.
+* **Resumen** (`/dashboard`): KPIs, month pace, budgets, alerts and charts for the chosen month.
 * **Pendientes** (`/pending`): unpaid purchases over the whole history, with totals, age and a date range; resolve them by hand, accept grouped-payment suggestions, see which payment covered each purchase, copy the list or download a CSV.
 * **Subir** (`/upload`): upload one or more `.xls`/`.xlsx` downloads; shows how many movements were new. If one file can't be read, nothing is imported.
 * **Movimientos** (`/movements`): the whole history, with search and currency/category/date filters; change a movement's category in place.

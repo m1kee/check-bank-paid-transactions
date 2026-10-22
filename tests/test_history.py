@@ -72,6 +72,13 @@ class ImportTests(HistoryTestCase):
         self.assertEqual(loaded["Date"].tolist(), [pd.Timestamp("2026-10-02"), pd.Timestamp("2026-10-03")])
         self.assertEqual(loaded["Installments"].tolist(), ["01/01", "01/01"])
 
+    def test_recent_imports_newest_first(self):
+        history.import_movements(self.conn, movements([("2026-10-02", "UBER", 4500)]), source_name="a.xls", now=DAY_1)
+        history.import_movements(self.conn, movements([("2026-10-02", "UBER", 4500)]), source_name="b.xls", now=DAY_2)
+        [latest, first] = history.recent_imports(self.conn)
+        self.assertEqual((latest["source_name"], latest["new_count"], latest["existing_count"]), ("b.xls", 0, 1))
+        self.assertEqual(first["imported_at"], DAY_1)
+
     def test_load_filters_by_currency(self):
         history.import_movements(self.conn, movements([("2026-10-02", "STORE", 10)]))
         history.import_movements(self.conn, movements([("2026-10-02", "STORE", 10)], currency="USD"))

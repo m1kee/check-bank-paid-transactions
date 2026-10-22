@@ -22,6 +22,9 @@ class Insights:
     categorized: pd.DataFrame
     spending: pd.DataFrame  # "Category", "Amount", "Count", "Previous" (previous month)
     daily: pd.DataFrame  # "Date", "Amount"
+    monthly: pd.DataFrame = None  # "Month", "Amount": the 12 months up to `month`
+    pace: list = field(default_factory=list)  # cumulative spending per day of `month`; None for days still to come
+    previous_pace: list = field(default_factory=list)  # the same for the previous month
     budgets: list = field(default_factory=list)
     plans: pd.DataFrame = None
     plans_summary: dict = field(default_factory=dict)
@@ -64,12 +67,21 @@ def build_insights(
     merged = merged.sort_values(["Amount", "Previous"], ascending=False, kind="stable").reset_index(drop=True)
 
     plans = installments.installment_plans(movements)
+    daily = cat.daily_spending(categorized, month, currency)
+    previous_daily = cat.daily_spending(categorized, month - 1, currency)
+    today = pd.Timestamp(today or datetime.date.today())
+    pace = [float(v) for v in daily["Amount"].cumsum()]
+    if month == today.to_period("M"):
+        pace = [v if day <= today.day else None for day, v in enumerate(pace, start=1)]
     return Insights(
         month=month,
         currency=currency,
         categorized=categorized,
         spending=merged,
-        daily=cat.daily_spending(categorized, month, currency),
+        daily=daily,
+        monthly=cat.monthly_spending(categorized, month, 12, currency),
+        pace=pace,
+        previous_pace=[float(v) for v in previous_daily["Amount"].cumsum()],
         budgets=cat.budget_lines(categories or [], current, month, today) if currency == "CLP" else [],
         plans=plans,
         plans_summary=installments.summary(plans),
