@@ -1,6 +1,6 @@
 [project]
 name = "bankcheck"
-version = "0.7.0"
+version = "0.8.0"
 description = "Find unpaid purchases in the bank's current-period movements export."
 readme = "readme.md"
 requires-python = ">=3.12"

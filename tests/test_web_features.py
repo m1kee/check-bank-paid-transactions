@@ -1,4 +1,5 @@
 """Web pages for proposals 03, 04, 11, 12, 13, 14, 15, 16, 19, 20 and 30."""
+import io
 import unittest
 
 from fastapi.testclient import TestClient
@@ -7,6 +8,7 @@ from bankcheck import categories as cat
 from bankcheck import history
 from bankcheck.notify import NtfySettings
 from bankcheck.web.app import create_app
+from tests.helpers import raw_export, raw_usd_section
 from tests.test_notify import FakeNtfy
 from tests.test_web import PAY, WebTestCase, unpaid_part, xlsx
 
@@ -181,6 +183,24 @@ class InstallmentsAndSubscriptionsTests(FeatureTestCase):
     def test_empty_pages(self):
         self.assertIn("No hay compras en cuotas", self.client.get("/installments").text)
         self.assertIn("No se detectaron", self.client.get("/subscriptions").text)
+
+
+class NextStatementPagesTests(FeatureTestCase):
+    def test_dollars_show_what_the_next_statement_bills(self):
+        buffer = io.BytesIO()
+        raw_export(raw_usd_section([("02/10/2026", "STEAM", 10.00), ("05/10/2026", "NETFLIX.COM", 15.99)])).to_excel(
+            buffer, header=False, index=False
+        )
+        self.upload(("dolares.xlsx", buffer.getvalue()))
+        pending = self.client.get("/pending").text
+        self.assertIn("A pagar en la próxima facturación", pending)
+        self.assertIn("US$25,99", pending)
+        self.assertIn("2 compras desde el 02/10/2026", pending)
+        self.assertIn("Próxima facturación (USD)", self.client.get("/dashboard").text)
+
+    def test_pesos_only_has_no_next_statement(self):
+        self.upload(("pesos.xlsx", xlsx([("01/10/2026", "UBER", 4500)])))
+        self.assertNotIn("próxima facturación", self.client.get("/pending").text)
 
 
 class NotificationPagesTests(FeatureTestCase):

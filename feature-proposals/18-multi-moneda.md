@@ -28,3 +28,5 @@ Hoy el script solo entiende el archivo en pesos. Si se le pasara el de dólares:
 
 ## Estado
 v0.7.0. El pago de la deuda en dólares aparece en la misma tabla de dólares (`PAGO DOLAR TEF …`) y es el total facturado, así que los dólares se concilian **por saldo**: un pago cubre el bloque continuo de compras pendientes que suma exactamente su monto (`MATCHING_MODE`). El total de referencia en CLP con el dólar del día queda pendiente.
+
+v0.8.0: "Próxima facturación" con el total de las compras de la última descarga en dólares (la vista es de movimientos no facturados, así que eso es lo que se va a cobrar).

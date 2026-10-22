@@ -28,6 +28,11 @@
         <p class="meta">{{ '+' if delta > 0 }}{{ delta | money(currency) }} vs {{ (month - 1) | month_name }}</p></div>
     <div class="card"><h3>Sin pagar</h3>
         <p class="value"><a href="/pending">{{ (pending.total_unpaid if pending else 0) | money(currency) }}</a></p></div>
+    {% for u in upcoming if u.count %}
+    <div class="card"><h3>Próxima facturación ({{ u.currency }})</h3>
+        <p class="value"><a href="/pending">{{ u.amount | money(u.currency) }}</a></p>
+        <p class="meta">{{ u.count }} {{ 'compra' if u.count == 1 else 'compras' }} desde el {{ u.since | date }}</p></div>
+    {% endfor %}
     {% if currency in insights.plans_summary %}
     <div class="card"><h3>Cuotas por mes</h3>
         <p class="value"><a href="/installments">{{ insights.plans_summary[currency][0] | money(currency) }}</a></p></div>

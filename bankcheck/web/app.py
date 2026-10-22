@@ -25,6 +25,7 @@ from markupsafe import Markup
 
 from bankcheck import __version__, charts, config, history, reconcile
 from bankcheck import alerts as alerts_module
+from bankcheck import billing
 from bankcheck import categories as cat
 from bankcheck.analysis import analyze
 from bankcheck.export import pending_csv, pending_text
@@ -207,6 +208,7 @@ def create_app(settings: Settings = None) -> FastAPI:
         novelty_kinds = (alerts_module.NEW_MERCHANT, alerts_module.NEW_CITY)
         return render(
             request, "dashboard.html", active="dashboard", insights=insights, months=months, month=selected,
+            upcoming=billing.load_upcoming(conn, view.movements),
             important_alerts=[a for a in insights.alerts if a.kind not in novelty_kinds],
             novelties=[a for a in insights.alerts if a.kind in novelty_kinds],
             currencies=currencies, currency=currency, pending=pending, charts=chart_html, budgets=budgets,
@@ -227,6 +229,7 @@ def create_app(settings: Settings = None) -> FastAPI:
         return render(
             request, "pending.html", active="pending", results=results, start=start, end=end,
             has_history=not view.movements.empty, copy_text=pending_text(results),
+            upcoming={u.currency: u for u in billing.load_upcoming(conn, view.movements)},
             csv_url="/pending.csv" + (f"?{query}" if query else ""),
             back_url="/pending" + (f"?{query}" if query else ""),
         )
