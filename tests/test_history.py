@@ -127,7 +127,7 @@ class SchemaTests(unittest.TestCase):
             # Turn it into a v1 history with data, as it was before migration v2
             conn = sqlite3.connect(path)
             conn.executescript(
-                "DROP TABLE resolutions; DROP TABLE dismissed_suggestions; DROP TABLE category_rules; "
+                "DROP TABLE notifications; DROP TABLE resolutions; DROP TABLE dismissed_suggestions; DROP TABLE category_rules; "
                 "ALTER TABLE movements DROP COLUMN category_id; DROP TABLE categories; PRAGMA user_version = 1;"
             )
             conn.close()

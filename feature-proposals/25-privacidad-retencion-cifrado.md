@@ -15,3 +15,6 @@ Cada ejecución deja **tres copias** de los movimientos bancarios en disco: el a
 
 ## Criterios de aceptación
 - [ ] `--cleanup` borra los archivos más antiguos que la retención configurada y lista lo que borró.
+
+## Estado
+⏸ Pospuesta (10/2026). Al principio, un respaldo en el mismo servidor como parte de [28](28-servidor-casero.md); más adelante se puede usar el NAS.

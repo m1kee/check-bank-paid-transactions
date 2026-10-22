@@ -22,6 +22,9 @@ Hoy el script solo entiende el archivo en pesos. Si se le pasara el de dólares:
 - ¿Cómo aparece el pago de la deuda en dólares? ¿En la tabla USD como abono en USD, o en la de pesos como un pago en CLP? Si es lo segundo, el matching 1 a 1 por monto no aplica y habría que conciliar por **saldo** en vez de por compra.
 
 ## Criterios de aceptación
-- [ ] El archivo USD se procesa sin tocar la configuración del de pesos.
-- [ ] Los montos en USD conservan sus decimales.
-- [ ] Nunca se empareja una compra en USD con un pago en CLP.
+- [x] El archivo USD se procesa sin tocar la configuración del de pesos.
+- [x] Los montos en USD conservan sus decimales.
+- [x] Nunca se empareja una compra en USD con un pago en CLP.
+
+## Estado
+v0.7.0. El pago de la deuda en dólares aparece en la misma tabla de dólares (`PAGO DOLAR TEF …`) y es el total facturado, así que los dólares se concilian **por saldo**: un pago cubre el bloque continuo de compras pendientes que suma exactamente su monto (`MATCHING_MODE`). El total de referencia en CLP con el dólar del día queda pendiente.

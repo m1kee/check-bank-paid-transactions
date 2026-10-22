@@ -20,5 +20,8 @@ Combinado con [21](21-automatizacion-carpeta.md), el flujo queda: descargas los 
 Enviar solo el resumen (cantidad y total), no el detalle de comercios, salvo que lo actives explícitamente.
 
 ## Criterios de aceptación
-- [ ] Configurable y apagado por defecto.
-- [ ] Ninguna credencial queda en el repo.
+- [x] Configurable y apagado por defecto.
+- [x] Ninguna credencial queda en el repo.
+
+## Estado
+v0.7.0 con [ntfy](https://ntfy.sh) (gratis, sin cuenta). Se envía después de cada subida por la web, no desde la CLI. Avisos únicos (presupuestos, duplicados, montos inusuales) registrados en la tabla `notifications`; si un envío falla, se reintenta en la siguiente subida.

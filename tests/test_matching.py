@@ -1,6 +1,7 @@
 import unittest
 
-from bankcheck.matching import is_payment_description, match_payments, split_movements
+from bankcheck.analysis import analyze
+from bankcheck.matching import is_payment_description, match_payments, match_statement_payments, split_movements
 from tests.helpers import movements
 
 PAY = "PAGO PESOS TEF PAGO NORMAL"
@@ -101,6 +102,70 @@ class MatchPaymentsTests(unittest.TestCase):
     def test_no_movements(self):
         result = run([])
         self.assertTrue(result.unpaid.empty and result.matches.empty and result.orphan_payments.empty)
+
+
+class StatementMatchingTests(unittest.TestCase):
+    """Cards paid by statement balance (USD): one payment covers a run of purchases."""
+
+    def match(self, rows):
+        purchases, payments = split_movements(movements(rows, currency="USD"))
+        return match_statement_payments(purchases, payments)
+
+    def test_payment_covers_the_billed_purchases(self):
+        result = self.match(
+            [
+                ("2026-09-02", "NETFLIX", 15.99),
+                ("2026-09-10", "APPLE.COM", 2.99),
+                ("2026-09-20", "STEAM", 10.00),
+                ("2026-09-28", "DISCORD", 9.99),  # next statement
+                ("2026-10-05", "PAGO DOLAR TEF", -28.98),
+            ]
+        )
+        self.assertEqual(result.matches["Description"].tolist(), ["NETFLIX", "APPLE.COM", "STEAM"])
+        self.assertEqual(set(result.matches["Payment Description"]), {"PAGO DOLAR TEF"})
+        self.assertEqual(result.unpaid["Description"].tolist(), ["DISCORD"])
+        self.assertTrue(result.orphan_payments.empty)
+
+    def test_purchases_from_a_cycle_not_fully_in_the_history_are_skipped(self):
+        result = self.match(
+            [
+                ("2026-08-30", "OLD CYCLE", 7.00),
+                ("2026-09-02", "NETFLIX", 15.99),
+                ("2026-09-10", "APPLE.COM", 2.99),
+                ("2026-10-05", "PAGO DOLAR TEF", -18.98),
+            ]
+        )
+        self.assertEqual(result.matches["Description"].tolist(), ["NETFLIX", "APPLE.COM"])
+        self.assertEqual(result.unpaid["Description"].tolist(), ["OLD CYCLE"])
+
+    def test_partial_payment_is_an_orphan(self):
+        result = self.match([("2026-09-02", "NETFLIX", 15.99), ("2026-09-10", "APPLE.COM", 2.99), ("2026-10-05", "PAGO DOLAR TEF", -10.00)])
+        self.assertTrue(result.matches.empty)
+        self.assertEqual(len(result.orphan_payments), 1)
+
+    def test_consecutive_monthly_payments(self):
+        result = self.match(
+            [
+                ("2026-09-02", "A", 10.00), ("2026-09-15", "B", 5.50),
+                ("2026-10-02", "PAGO DOLAR TEF", -15.50),
+                ("2026-09-28", "C", 3.25), ("2026-10-10", "D", 4.00),
+                ("2026-11-02", "PAGO DOLAR TEF", -7.25),
+            ]
+        )
+        self.assertTrue(result.unpaid.empty)
+        self.assertEqual(len(result.matches), 4)
+
+    def test_purchases_after_the_payment_are_not_covered(self):
+        result = self.match([("2026-10-06", "LATER", 9.99), ("2026-10-05", "PAGO DOLAR TEF", -9.99)])
+        self.assertEqual(len(result.orphan_payments), 1)
+
+    def test_analysis_uses_the_currency_mode(self):
+        rows = [("2026-09-02", "A", 10), ("2026-09-03", "B", 5), ("2026-10-02", "PAGO DOLAR TEF", -15)]
+        [usd] = analyze(movements(rows, currency="USD"))
+        [clp] = analyze(movements([(d, desc.replace("DOLAR", "PESOS"), a) for d, desc, a in rows]))
+        self.assertTrue(usd.unpaid.empty)
+        self.assertEqual(len(clp.unpaid), 2)  # pesos are paid purchase by purchase
+        self.assertEqual(len(clp.suggestions), 1)
 
 
 if __name__ == "__main__":

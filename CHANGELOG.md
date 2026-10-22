@@ -6,6 +6,17 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-21
+
+### Added
+- Notificaciones por [ntfy](https://ntfy.sh), gratis y apagadas por defecto (20): después de cada subida llega el resumen de pendientes, y una sola vez cada aviso de presupuesto al 80 % o 100 % (lo que faltaba de 30) y de cobro duplicado o monto inusual. Por defecto sin comercios (`BANKCHECK_NOTIFY_DETAILS=1` los agrega). Botón de prueba en Subir. Configuración: `BANKCHECK_NTFY_URL`, `BANKCHECK_NTFY_TOKEN`.
+- Matching por saldo para los dólares (18): un pago en USD es el total facturado y cubre el bloque continuo de compras pendientes que suma exactamente su monto. Se elige por moneda en `MATCHING_MODE`; los pesos siguen compra a compra.
+- Migración v3 del historial: tabla `notifications`.
+
+### Fixed
+- El formato de dólares se validó con una descarga real (17, 18) y no era el supuesto: no tiene columnas de cuotas, tiene una columna País y el monto va en la columna 8. Antes, un archivo en dólares se rechazaba con "el encabezado no coincide". Ahora cada compra en dólares cuenta como de un solo cargo y se guarda el país (la "ciudad" del banco trae teléfonos o dominios).
+- Los pagos `PAGO DOLAR …` no se reconocían como pagos.
+
 ## [0.6.0] - 2026-10-21
 
 Fases 2 y 3 del roadmap, más 06 y 19 de la Fase 4.
@@ -113,7 +124,8 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.3.0...v0.4.0

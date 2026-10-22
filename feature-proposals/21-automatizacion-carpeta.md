@@ -17,3 +17,6 @@ Para reconocer el archivo y su formato, usar el nombre del archivo o el `detect(
 ## Criterios de aceptación
 - [ ] Descargar los movimientos genera y abre el reporte sin intervención.
 - [ ] Un archivo que no es de movimientos se ignora sin errores.
+
+## Estado
+✖ Descartada (10/2026): los archivos siempre se suben directamente por la web.

@@ -115,6 +115,16 @@ MIGRATIONS.append(
     + _seed_categories_sql(config.DEFAULT_CATEGORIES)
 )
 
+# v3: notifications already sent, so budgets and alerts are announced once (20)
+MIGRATIONS.append(
+    """
+    CREATE TABLE notifications (
+        key TEXT PRIMARY KEY,
+        sent_at TEXT NOT NULL
+    );
+    """
+)
+
 # DataFrame column -> movements table column
 _DB_COLUMNS = {
     "Currency": "currency",

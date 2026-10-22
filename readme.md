@@ -7,7 +7,8 @@ Current version: see [`CHANGELOG.md`](CHANGELOG.md) · Roadmap: [`feature-propos
 ## ✨ Features
 
 * **Format detection:** finds the movements section and its header by name ("Movimientos Nacionales" / "Movimientos Internacionales") and fails with a clear error if the bank changes the layout.
-* **Pesos and dollars:** each movement carries its currency, and each currency is reconciled separately (dollar support not yet validated with a real file).
+* **Pesos and dollars:** each movement carries its currency, and each currency is reconciled separately. Pesos are paid purchase by purchase; dollars are paid by statement balance, so a dollar payment covers the run of consecutive purchases that adds up to it (`MATCHING_MODE` in `config.py`).
+* **Notifications (ntfy):** after each upload, a summary of what's pending on your phone, plus a one-time notice when a budget passes 80%/100% or a charge looks duplicated. Free, off by default.
 * **Date-aware matching:** a payment only covers a purchase of the same amount made before it (or the same day), within a configurable window; repeated amounts are paid oldest first.
 * **Several downloads at once:** movements repeated across downloads are counted once.
 * **History (`--db`):** every download is imported into a SQLite database, so an unpaid purchase stays pending after the bank closes the period, and a payment in the next period can cover it.
@@ -153,8 +154,15 @@ It uses the same history as `bankcheck --db`. Settings, through environment vari
 | `BANKCHECK_DB` | `<data dir>/bank.db` | SQLite history |
 | `BANKCHECK_UPLOADS_DIR` | `<data dir>/uploads` | Uploaded original files |
 | `BANKCHECK_PASSWORD` | *(none)* | If set, every page asks for it (any user name) |
+| `BANKCHECK_NTFY_URL` | *(off)* | ntfy topic for notifications, e.g. `https://ntfy.sh/<long-secret-topic>` |
+| `BANKCHECK_NTFY_TOKEN` | *(none)* | Access token, only for a protected (self-hosted) ntfy server |
+| `BANKCHECK_NOTIFY_DETAILS` | *(off)* | `1` to include merchants in notifications, not just counts and totals |
 
 Set a password whenever the app listens on anything other than `127.0.0.1`.
+
+### Notifications
+
+[ntfy](https://ntfy.sh) is free and needs no account: install the app, subscribe to a topic with a long random name (anyone who knows it can read it) and set `BANKCHECK_NTFY_URL`. The **Subir** page has a button to send a test. Messages only carry counts and totals unless `BANKCHECK_NOTIFY_DETAILS=1`.
 
 ### Docker
 
