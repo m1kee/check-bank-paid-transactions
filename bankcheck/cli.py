@@ -16,7 +16,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from bankcheck import __version__, config, history, reconcile
+from bankcheck import __version__, alerts, config, history, reconcile
 from bankcheck import categories as cat
 from bankcheck.alerts import KIND_LABELS
 from bankcheck.analysis import analyze, filter_dates
@@ -139,13 +139,14 @@ class HistoryData:
     """What the analysis needs from the history: movements and the decisions stored in it."""
 
     def __init__(self, movements, resolutions=None, dismissed=frozenset(), rules=None, overrides=None,
-                 categories=None):
+                 categories=None, dismissed_alerts=frozenset()):
         self.movements = movements
         self.resolutions = resolutions or {}
         self.dismissed = dismissed
         self.rules = rules if rules is not None else cat.default_rules()
         self.overrides = overrides or {}
         self.categories = categories or []
+        self.dismissed_alerts = dismissed_alerts
 
 
 def import_to_history(db_path: str, downloads: list, dry_run: bool = False) -> HistoryData:
@@ -170,6 +171,7 @@ def import_to_history(db_path: str, downloads: list, dry_run: bool = False) -> H
             rules=cat.load_rules(conn),
             overrides=cat.load_overrides(conn),
             categories=cat.list_categories(conn),
+            dismissed_alerts=alerts.load_dismissed(conn),
         )
     finally:
         conn.close()
@@ -328,7 +330,8 @@ def run(args):
         log.info("Filtro de fecha activo: analizando desde %s hasta %s", since, until)
     results = analyze(data.movements, args.start_date, args.end_date, data.resolutions, data.dismissed)
     insights = build_insights(
-        filter_dates(data.movements, args.start_date, args.end_date), data.rules, data.overrides, data.categories
+        filter_dates(data.movements, args.start_date, args.end_date), data.rules, data.overrides, data.categories,
+        dismissed_alerts=data.dismissed_alerts,
     )
     print_report(results, insights.alerts)
 

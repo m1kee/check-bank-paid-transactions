@@ -240,6 +240,7 @@ input:focus, select:focus, textarea:focus, .btn:focus-visible { outline: 2px sol
 .filters { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-end; margin-bottom: 16px; }
 .filters .field { flex: 1 1 150px; }
 .filters .field.wide { flex: 3 1 260px; }
+.alert-actions { display: flex; flex-wrap: wrap; gap: 4px; margin: 6px 0 0 -10px; }
 .inline-form { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
 .inline-form .field { flex: 1 1 140px; }
 

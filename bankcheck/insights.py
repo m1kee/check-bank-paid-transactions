@@ -56,6 +56,7 @@ def build_insights(
     month: pd.Period = None,
     currency: str = "CLP",
     today: datetime.date = None,
+    dismissed_alerts: set = frozenset(),
 ) -> Insights:
     month = month or latest_month(movements)
     categorized = cat.with_categories(movements, rules, overrides)
@@ -87,7 +88,7 @@ def build_insights(
         plans_summary=installments.summary(plans),
         projection=installments.projection(plans, currency),
         subscriptions=recurring.detect_subscriptions(movements),
-        alerts=alerts_module.find_alerts(movements),
+        alerts=alerts_module.find_alerts(movements, dismissed_alerts),
     )
 
 

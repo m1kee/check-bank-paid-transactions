@@ -7,7 +7,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import pandas as pd
 
 from bankcheck import categories as cat
-from bankcheck import history, notify
+from bankcheck import alerts, history, notify
 from bankcheck.analysis import analyze
 from tests.helpers import movements
 
@@ -125,6 +125,12 @@ class AfterImportTests(unittest.TestCase):
         self.ntfy.received.clear()
         notify.notify_after_import(self.conn, self.settings, TODAY)
         self.assertEqual(self.titles(), ["🧾 Compras sin pagar"])
+
+    def test_a_dismissed_alert_is_not_announced(self):
+        [alert] = alerts.find_alerts(history.load_movements(self.conn))
+        alerts.dismiss(self.conn, alert.merchant_key)
+        notify.notify_after_import(self.conn, self.settings, TODAY)
+        self.assertNotIn("⚠️ Posible cobro duplicado", self.titles())
 
     def test_passing_100_after_80_is_announced_again(self):
         notify.notify_after_import(self.conn, self.settings, TODAY)

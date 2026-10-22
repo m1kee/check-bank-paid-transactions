@@ -82,6 +82,7 @@ class HistoryView:
     rules: list
     overrides: dict
     categories: list
+    dismissed_alerts: set = frozenset()
 
     @classmethod
     def load(cls, conn) -> "HistoryView":
@@ -92,6 +93,7 @@ class HistoryView:
             rules=cat.load_rules(conn),
             overrides=cat.load_overrides(conn),
             categories=cat.list_categories(conn),
+            dismissed_alerts=alerts_module.load_dismissed(conn),
         )
 
     def analyze(self, start=None, end=None) -> list:
@@ -189,7 +191,8 @@ def create_app(settings: Settings = None) -> FastAPI:
         currencies = sorted(view.movements["Currency"].unique()) or ["CLP"]
         currency = currency if currency in currencies else currencies[0]
         selected = _parse_month(month) or latest_month(view.movements)
-        insights = build_insights(view.movements, view.rules, view.overrides, view.categories, selected, currency)
+        insights = build_insights(view.movements, view.rules, view.overrides, view.categories, selected, currency,
+                                  dismissed_alerts=view.dismissed_alerts)
         results = {r.currency: r for r in view.analyze()}
         pending = results.get(currency)
 
@@ -253,6 +256,8 @@ def create_app(settings: Settings = None) -> FastAPI:
             currencies=currencies, currency=currency, pending=pending, oldest=oldest, charts=chart_html,
             budgets=budgets, subscriptions=subscriptions, monthly=monthly,
             has_history=not view.movements.empty,
+            silenced=alerts_module.silenced_merchants(view.dismissed_alerts),
+            back_url=str(request.url.path) + (f"?{request.url.query}" if request.url.query else ""),
         )
 
     # --- Pending purchases and manual reconciliation (03, 04, 11, 19) ----------------
@@ -309,6 +314,18 @@ def create_app(settings: Settings = None) -> FastAPI:
     def dismiss(payment_id: int, next: str = Form(""), conn=Depends(get_db)):
         reconcile.dismiss_suggestions(conn, payment_id)
         return _back(_safe_next(next, "/pending"))
+
+    # --- Alerts dismissed by hand (16) ---------------------------------------------------
+
+    @app.post("/alerts/dismiss")
+    def dismiss_alert(key: str = Form(...), next: str = Form(""), conn=Depends(get_db)):
+        alerts_module.dismiss(conn, key)
+        return _back(_safe_next(next, "/dashboard"))
+
+    @app.post("/alerts/restore")
+    def restore_alert(key: str = Form(...), next: str = Form(""), conn=Depends(get_db)):
+        alerts_module.restore(conn, key)
+        return _back(_safe_next(next, "/dashboard"))
 
     # --- Upload -----------------------------------------------------------------------
 

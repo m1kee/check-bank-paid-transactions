@@ -153,11 +153,10 @@ def alert_messages(found: list, details: bool = False) -> list:
         if alert.kind not in ALERT_KINDS:
             continue
         row = alert.movements[-1]
-        ids = ",".join(str(m.get("Id", m["Description"])) for m in alert.movements)
         body = f"{alert.detail} {format_amount(row['Amount'], row['Currency'])} el {row['Date']:%d/%m}."
         if details:
             body = f"{row['Description']}: {body}"
-        messages.append(Message(f"⚠️ {alert.label}", body, key=f"alert:{alert.kind}:{ids}", tags=("warning",)))
+        messages.append(Message(f"⚠️ {alert.label}", body, key=f"alert:{alert.key}", tags=("warning",)))
     return messages
 
 
@@ -186,7 +185,7 @@ def messages_after_import(conn: sqlite3.Connection, settings: NtfySettings, toda
     categorized = cat.with_categories(movements, cat.load_rules(conn), cat.load_overrides(conn))
     lines = cat.budget_lines(cat.list_categories(conn), cat.spending(categorized, month), month, today)
 
-    once = budget_messages(lines, month) + alert_messages(alerts.find_alerts(movements), settings.details)
+    once = budget_messages(lines, month) + alert_messages(alerts.find_alerts(movements, alerts.load_dismissed(conn)), settings.details)
     upcoming = billing.load_upcoming(conn, movements)
     return [pending_summary(results, today, settings.details, upcoming)] + [
         m for m in once if not _already_sent(conn, m.key)

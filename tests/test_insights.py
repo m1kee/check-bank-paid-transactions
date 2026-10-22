@@ -100,6 +100,36 @@ class AlertTests(unittest.TestCase):
         short = movements([("2026-10-01", "LIDER", 20000), ("2026-10-10", "TIENDA NUEVA", 9000)])
         self.assertEqual(alerts.find_alerts(short), [])
 
+    def test_a_habitual_charge_every_two_days_is_not_a_duplicate(self):
+        # A lottery played three times a week
+        days = (1, 3, 6, 8, 10, 13, 15, 17, 20)
+        df = movements([(f"2026-10-{d:02d}", "LOTERIA", 3500) for d in days])
+        self.assertNotIn(alerts.DUPLICATE, [a.kind for a in alerts.find_alerts(df)])
+
+    def test_a_habitual_charge_twice_the_same_day_is_a_duplicate(self):
+        days = (1, 3, 6, 8, 8)
+        [alert] = alerts.find_alerts(movements([(f"2026-10-{d:02d}", "LOTERIA", 3500) for d in days]))
+        self.assertEqual(alert.kind, alerts.DUPLICATE)
+        self.assertIn("mismo día", alert.detail)
+
+    def test_an_occasional_charge_two_days_apart_is_still_a_duplicate(self):
+        df = movements([("2026-10-01", "CAFE", 2500), ("2026-10-03", "CAFE", 2500)])
+        self.assertEqual([a.kind for a in alerts.find_alerts(df)], [alerts.DUPLICATE])
+
+    def test_a_dismissed_alert_is_not_shown(self):
+        df = movements([("2026-10-02", "CAFE", 2500), ("2026-10-02", "CAFE", 2500)])
+        [alert] = alerts.find_alerts(df)
+        self.assertEqual(alerts.find_alerts(df, {alert.key}), [])
+
+    def test_a_silenced_merchant_raises_no_duplicates(self):
+        df = movements([("2026-10-02", "CAFE 123", 2500), ("2026-10-02", "CAFE 123", 2500),
+                        ("2026-10-09", "CAFE 456", 1800), ("2026-10-09", "CAFE 456", 1800)])
+        alerts_found = alerts.find_alerts(df)
+        self.assertEqual(len(alerts_found), 2)
+        self.assertEqual(alerts.find_alerts(df, {alerts_found[0].merchant_key}), [])
+        self.assertEqual(alerts.silenced_merchants({alerts_found[0].merchant_key}),
+                         [(alerts_found[0].merchant_key, "cafe (CLP)")])
+
     def test_old_movements_raise_no_alerts(self):
         df = movements([("2026-05-02", "CAFE", 2500), ("2026-05-02", "CAFE", 2500), ("2026-10-03", "UBER", 4500)])
         self.assertNotIn(alerts.DUPLICATE, [a.kind for a in alerts.find_alerts(df)])

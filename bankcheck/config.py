@@ -143,6 +143,9 @@ SUBSCRIPTION_AMOUNT_TOLERANCE = 0.15   # charges within ±15% of the usual amoun
 
 ALERT_LOOKBACK_DAYS = 60          # only movements this recent raise alerts
 DUPLICATE_MAX_DAYS = 2            # same description and amount within these days
+# A charge repeated on at least these many days of the lookback is a habit (a
+# lottery played three times a week): only two of them on the same day are a duplicate
+DUPLICATE_HABITUAL_MIN_DAYS = 4
 UNUSUAL_AMOUNT_FACTOR = 3         # times the merchant's median amount
 UNUSUAL_MIN_HISTORY = 3           # previous charges needed to know what's "usual"
 NEW_MERCHANT_MIN_HISTORY_DAYS = 60  # history span needed before "new" means anything
