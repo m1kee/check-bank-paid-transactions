@@ -1,0 +1,18 @@
+[project]
+name = "bankcheck"
+version = "0.2.0"
+description = "Find unpaid purchases in the bank's current-period movements export."
+readme = "readme.md"
+requires-python = ">=3.12"
+dependencies = [
+    "openpyxl>=3.1",
+    "pandas>=2.2",
+    "xlrd>=2.0",
+]
+
+[project.scripts]
+bankcheck = "bankcheck.cli:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
