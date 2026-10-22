@@ -33,5 +33,8 @@ El análisis carga este archivo y quita esas compras de la lista de pendientes. 
 - Nuevo `overrides.py` (cargar y aplicar), `analysis.py`, `html_reporter.py`, `.gitignore`.
 
 ## Criterios de aceptación
-- [ ] Una compra en `ignore` o `mark_paid` no aparece como pendiente.
-- [ ] Las reglas que no coinciden con nada se advierten por consola.
+- [x] Una compra en `ignore` o `mark_paid` no aparece como pendiente.
+- [x] ~~Las reglas que no coinciden con nada se advierten por consola.~~ Ya no aplica: la decisión queda ligada al movimiento en el historial, así que no hay reglas que puedan quedar sin coincidir.
+
+## Estado (v0.6.0)
+En SQLite (tabla `resolutions`), no en `overrides.yaml`: se resuelve desde la página Pendientes con un motivo opcional y se puede deshacer. También se puede ignorar un pago. El reporte HTML las muestra en "Resueltas manualmente" (colapsada).

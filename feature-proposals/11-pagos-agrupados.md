@@ -19,5 +19,8 @@ Después del matching 1 a 1, intentar cubrir los **pagos huérfanos** con combin
 - Falsos positivos: entre muchas compras siempre hay alguna combinación que suma cualquier número. Por eso conviene presentarlo como **sugerencia**, no como match automático.
 
 ## Criterios de aceptación
-- [ ] Un pago de $10.000 que equivale exactamente a 3 compras pendientes aparece sugerido.
-- [ ] Las sugerencias ambiguas no se aplican solas.
+- [x] Un pago de $10.000 que equivale exactamente a 3 compras pendientes aparece sugerido.
+- [x] Las sugerencias ambiguas no se aplican solas.
+
+## Estado (v0.6.0)
+Ninguna sugerencia se aplica sola, ni siquiera las que tienen una sola combinación: se aceptan o se descartan en Pendientes. Se prueban hasta 30 compras candidatas por pago (las más cercanas en fecha) y se muestran hasta 5 combinaciones. Tolerancia en `GROUP_MATCH_TOLERANCE`.

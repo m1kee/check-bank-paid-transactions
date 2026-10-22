@@ -11,9 +11,11 @@ import logging
 import os
 import sqlite3
 from dataclasses import dataclass
+from pathlib import Path
 
 import pandas as pd
 
+from bankcheck import config
 from bankcheck.dedup import add_fingerprints
 from bankcheck.parsers import COLUMNS
 
@@ -59,6 +61,60 @@ MIGRATIONS = [
     """,
 ]
 
+
+def _sql_text(value: str) -> str:
+    return "'" + value.replace("'", "''") + "'"
+
+
+def _seed_categories_sql(categories: dict) -> str:
+    """INSERTs for the starting categories and rules (config.DEFAULT_CATEGORIES)."""
+    statements = []
+    for name, patterns in categories.items():
+        statements.append(f"INSERT INTO categories (name) VALUES ({_sql_text(name)});")
+        for pattern in patterns:
+            statements.append(
+                "INSERT OR IGNORE INTO category_rules (pattern, category_id, created_at) "
+                f"SELECT {_sql_text(pattern.upper())}, id, datetime('now') FROM categories "
+                f"WHERE name = {_sql_text(name)};"
+            )
+    return "\n".join(statements)
+
+
+# v2: manual reconciliation (03, 11), categories (13) and budgets (30). The
+# starting categories are the ones in config at the time the history is migrated.
+MIGRATIONS.append(
+    """
+    CREATE TABLE resolutions (
+        movement_id INTEGER PRIMARY KEY REFERENCES movements(id) ON DELETE CASCADE,
+        status TEXT NOT NULL CHECK (status IN ('paid', 'ignored')),
+        payment_id INTEGER REFERENCES movements(id) ON DELETE CASCADE,
+        reason TEXT NOT NULL DEFAULT '',
+        created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE dismissed_suggestions (
+        payment_id INTEGER PRIMARY KEY REFERENCES movements(id) ON DELETE CASCADE,
+        created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE categories (
+        id INTEGER PRIMARY KEY,
+        name TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        budget NUMERIC
+    );
+
+    CREATE TABLE category_rules (
+        id INTEGER PRIMARY KEY,
+        pattern TEXT NOT NULL UNIQUE COLLATE NOCASE,
+        category_id INTEGER NOT NULL REFERENCES categories(id) ON DELETE CASCADE,
+        created_at TEXT NOT NULL
+    );
+
+    ALTER TABLE movements ADD COLUMN category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL;
+    """
+    + _seed_categories_sql(config.DEFAULT_CATEGORIES)
+)
+
 # DataFrame column -> movements table column
 _DB_COLUMNS = {
     "Currency": "currency",
@@ -96,6 +152,27 @@ def connect(path: str) -> sqlite3.Connection:
         conn.close()
         raise
     return conn
+
+
+def connect_copy(path: str) -> sqlite3.Connection:
+    """
+    An in-memory copy of the history at `path` (empty if it doesn't exist), so
+    a dry run can import and analyze without touching the file.
+    """
+    copy = sqlite3.connect(":memory:")
+    if os.path.exists(path):
+        try:
+            source = sqlite3.connect(f"file:{Path(path).resolve().as_posix()}?mode=ro", uri=True)
+            try:
+                source.backup(copy)
+            finally:
+                source.close()
+        except sqlite3.Error as e:
+            copy.close()
+            raise HistoryError(f"No se pudo leer el historial '{path}': {e}") from e
+    copy.execute("PRAGMA foreign_keys = ON")
+    migrate(copy)
+    return copy
 
 
 def schema_version(conn: sqlite3.Connection) -> int:

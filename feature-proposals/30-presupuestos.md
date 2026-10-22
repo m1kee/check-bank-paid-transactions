@@ -15,5 +15,8 @@ Saber en qué se gastó ([13](13-categorizacion-de-gastos.md)) sirve, pero ayuda
 - Los presupuestos se manejan en CLP. Si se convierten los gastos en USD, se suman con el dólar del día como referencia ([18](18-multi-moneda.md)).
 
 ## Criterios de aceptación
-- [ ] Se puede definir y editar el presupuesto de cada categoría.
-- [ ] El inicio muestra el avance del mes por categoría.
+- [x] Se puede definir y editar el presupuesto de cada categoría.
+- [x] El inicio muestra el avance del mes por categoría.
+
+## Estado (v0.6.0)
+Presupuestos en pesos, editables en Categorías. Pendiente: la alerta al 80 % y 100 % (necesita [20](20-notificaciones.md)) y convertir los gastos en dólares.

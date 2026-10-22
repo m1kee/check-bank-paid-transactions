@@ -20,5 +20,8 @@ Y un total: **"Compromiso mensual en cuotas: $X"** y **"Deuda total en cuotas: $
 - Proyectar mes a mes cuánto baja la carga de cuotas (gráfico de barras, ver [14](14-dashboard-con-graficos.md)).
 
 ## Criterios de aceptación
-- [ ] Una compra `03/12` de $45.000 muestra 9 cuotas y $405.000 restantes.
-- [ ] El total mensual coincide con la suma de cuotas vigentes.
+- [x] Una compra `03/12` de $45.000 muestra 9 cuotas y $405.000 restantes.
+- [x] El total mensual coincide con la suma de cuotas vigentes.
+
+## Estado (v0.6.0)
+El mes de cada cuota es el de la última descarga donde se vio (o la fecha del movimiento sin historial). Si se dejan de subir descargas, las cuotas pagadas después no se descuentan.

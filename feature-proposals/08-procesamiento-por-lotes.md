@@ -17,5 +17,8 @@ Hoy hay que pasar la ruta de cada archivo. El caso típico es descargar la tabla
 - [10 · Deduplicación](10-deduplicacion-entre-descargas.md): si en la carpeta quedan dos descargas del mismo mes, se repiten movimientos.
 
 ## Criterios de aceptación
-- [ ] Sin argumentos procesa todos los archivos pendientes.
-- [ ] Pesos y dólares salen en el mismo reporte, cada uno con sus totales.
+- [x] Sin argumentos procesa todos los archivos pendientes.
+- [x] Pesos y dólares salen en el mismo reporte, cada uno con sus totales.
+
+## Estado (v0.6.0)
+La web ya aceptaba varios archivos (v0.4.0). La CLI, sin argumentos, procesa `pre-process-data/`.

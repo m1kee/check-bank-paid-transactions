@@ -14,5 +14,8 @@ Con el historial ([09](09-historial-sqlite.md)), detectar comercios que:
 Mostrar una tabla "Suscripciones detectadas" con monto actual, costo anual estimado y una alerta si **el precio subió** respecto del cobro anterior.
 
 ## Criterios de aceptación
-- [ ] Un cobro mensual de Netflix durante 3 meses aparece detectado.
-- [ ] Una subida de precio se marca en el reporte.
+- [x] Un cobro mensual de Netflix durante 3 meses aparece detectado.
+- [x] Una subida de precio se marca en el reporte.
+
+## Estado (v0.6.0)
+Las suscripciones sin cobros en los últimos 45 días se consideran canceladas y no se muestran.

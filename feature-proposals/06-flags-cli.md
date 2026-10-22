@@ -22,5 +22,8 @@
 - `main.py` (argparse y flujo), `analysis.py` (filtro `end_date`, parámetro `open_browser`), `html_reporter.py`.
 
 ## Criterios de aceptación
-- [ ] `python main.py x.xls --no-archive --no-open` deja la carpeta igual que antes y no abre nada.
-- [ ] `--reanalyze` funciona sobre cualquier archivo de `data/`.
+- [x] `python main.py x.xls --no-archive --no-open` deja la carpeta igual que antes y no abre nada.
+- [x] `--reanalyze` funciona sobre cualquier archivo de `data/`.
+
+## Estado (v0.6.0)
+`--dry-run` con `--db` importa sobre una copia en memoria del historial: el archivo no se toca.

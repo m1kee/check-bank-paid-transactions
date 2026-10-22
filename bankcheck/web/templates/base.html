@@ -6,13 +6,18 @@
     <meta name="color-scheme" content="light dark">
     <title>{% block title %}bankcheck{% endblock %} · bankcheck</title>
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <style>{{ chart_css }}</style>
     <script src="{{ url_for('static', path='htmx.min.js') }}" defer></script>
 </head>
 <body>
     <nav>
+        <a href="/dashboard" class="{{ 'active' if active == 'dashboard' }}">Inicio</a>
         <a href="/pending" class="{{ 'active' if active == 'pending' }}">Pendientes</a>
-        <a href="/upload" class="{{ 'active' if active == 'upload' }}">Subir</a>
         <a href="/movements" class="{{ 'active' if active == 'movements' }}">Movimientos</a>
+        <a href="/installments" class="{{ 'active' if active == 'installments' }}">Cuotas</a>
+        <a href="/subscriptions" class="{{ 'active' if active == 'subscriptions' }}">Suscripciones</a>
+        <a href="/categories" class="{{ 'active' if active == 'categories' }}">Categorías</a>
+        <a href="/upload" class="{{ 'active' if active == 'upload' }}">Subir</a>
     </nav>
     <main>
         {% block content %}{% endblock %}

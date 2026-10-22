@@ -118,6 +118,26 @@ class SchemaTests(unittest.TestCase):
             self.assertEqual(len(history.load_movements(conn)), 1)
             conn.close()
 
+    def test_upgrading_a_v1_history_keeps_its_movements(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            path = os.path.join(tmp, "bank.db")
+            conn = history.connect(path)
+            history.import_movements(conn, movements([("2026-10-02", "UBER", 4500)]))
+            conn.close()
+            # Turn it into a v1 history with data, as it was before migration v2
+            conn = sqlite3.connect(path)
+            conn.executescript(
+                "DROP TABLE resolutions; DROP TABLE dismissed_suggestions; DROP TABLE category_rules; "
+                "ALTER TABLE movements DROP COLUMN category_id; DROP TABLE categories; PRAGMA user_version = 1;"
+            )
+            conn.close()
+
+            conn = history.connect(path)
+            self.assertEqual(history.schema_version(conn), len(history.MIGRATIONS))
+            self.assertEqual(history.load_movements(conn)["Description"].tolist(), ["UBER"])
+            self.assertGreater(conn.execute("SELECT COUNT(*) FROM category_rules").fetchone()[0], 0)
+            conn.close()
+
     def test_refuses_a_database_from_a_newer_version(self):
         conn = sqlite3.connect(":memory:")
         conn.execute(f"PRAGMA user_version = {len(history.MIGRATIONS) + 1}")

@@ -47,31 +47,31 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 
 | # | Feature | Esfuerzo |
 |---|---|---|
-| 03 | [Marcar pagado / ignorar](03-conciliacion-manual.md) | M |
-| 04 | [Ver qué pago cubrió cada compra](04-detalle-de-matches.md) | S |
+| 03 | [Marcar pagado / ignorar](03-conciliacion-manual.md) | M — ✅ v0.6.0 |
+| 04 | [Ver qué pago cubrió cada compra](04-detalle-de-matches.md) | S — ✅ v0.6.0 |
 | 18 | [Movimientos en dólares](18-multi-moneda.md) | M |
-| 08 | [Subir varios archivos a la vez](08-procesamiento-por-lotes.md) | S |
-| 11 | [Pagos que cubren varias compras](11-pagos-agrupados.md) | M |
+| 08 | [Subir varios archivos a la vez](08-procesamiento-por-lotes.md) | S — ✅ v0.6.0 |
+| 11 | [Pagos que cubren varias compras](11-pagos-agrupados.md) | M — ✅ v0.6.0 |
 
 ## Fase 3 · Entender los gastos
 
 | # | Feature | Esfuerzo |
 |---|---|---|
-| 13 | [Catalogar gastos (categorías y reglas)](13-categorizacion-de-gastos.md) | M |
-| 30 | [Presupuestos por categoría](30-presupuestos.md) | S–M |
-| 14 | [Dashboard con gráficos](14-dashboard-con-graficos.md) | M |
-| 12 | [Seguimiento de cuotas](12-seguimiento-de-cuotas.md) | M |
-| 15 | [Detectar suscripciones](15-deteccion-suscripciones.md) | M |
-| 16 | [Alertas de duplicados y anomalías](16-alertas-anomalias.md) | S |
+| 13 | [Catalogar gastos (categorías y reglas)](13-categorizacion-de-gastos.md) | M — ✅ v0.6.0 |
+| 30 | [Presupuestos por categoría](30-presupuestos.md) | S–M — ✅ v0.6.0 (falta la alerta, ver 20) |
+| 14 | [Dashboard con gráficos](14-dashboard-con-graficos.md) | M — ✅ v0.6.0 |
+| 12 | [Seguimiento de cuotas](12-seguimiento-de-cuotas.md) | M — ✅ v0.6.0 |
+| 15 | [Detectar suscripciones](15-deteccion-suscripciones.md) | M — ✅ v0.6.0 |
+| 16 | [Alertas de duplicados y anomalías](16-alertas-anomalias.md) | S — ✅ v0.6.0 |
 
 ## Fase 4 · Comodidad y operación
 
 | # | Feature | Esfuerzo |
 |---|---|---|
-| 19 | [Copiar / exportar pendientes](19-exportar-pendientes.md) | XS |
+| 19 | [Copiar / exportar pendientes](19-exportar-pendientes.md) | XS — ✅ v0.6.0 |
 | 20 | [Notificaciones](20-notificaciones.md) | M |
 | 25 | [Privacidad: retención y respaldos cifrados](25-privacidad-retencion-cifrado.md) | S–M |
-| 06 | [Flags de la CLI](06-flags-cli.md) | S |
+| 06 | [Flags de la CLI](06-flags-cli.md) | S — ✅ v0.6.0 |
 | 21 | [Procesar al descargar (sin abrir la web)](21-automatizacion-carpeta.md) | S–M |
 
 ## Dependencias clave
