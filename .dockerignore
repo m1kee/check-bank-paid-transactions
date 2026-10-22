@@ -1,0 +1,7 @@
+# Only the code goes into the image; never bank data
+*
+!pyproject.toml
+!uv.lock
+!readme.md
+!bankcheck/
+**/__pycache__

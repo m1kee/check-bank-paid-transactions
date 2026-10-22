@@ -6,6 +6,23 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-10-21
+
+### Added
+- `-v/--verbose` y `-q/--quiet` en la CLI (24).
+- `Dockerfile` y `docker-compose.yml` para correr la app web en un contenedor, con los datos en un volumen, contraseña obligatoria y el puerto publicado solo en `127.0.0.1` por defecto (26).
+- Variable de entorno `BANKCHECK_DATA_DIR` para elegir la carpeta de datos (archivos limpios, historial y subidas) sin depender del directorio actual (26).
+- El CI también construye la imagen de Docker.
+- La app web registra cada importación en su log.
+
+### Changed
+- Los mensajes de avance de la CLI usan `logging` y salen por stderr; el reporte sale por stdout, así que se puede redirigir a un archivo (24).
+- El encabezado de la CLI pasa de "Account Analysis Tool" a "bankcheck vX.Y.Z · análisis de movimientos", y se quitó "Proceso completo.".
+- Los errores se propagan como excepciones y `main()` devuelve el código de salida; un historial de una versión más nueva también termina con código 1 (24).
+
+### Fixed
+- Si el historial no se podía migrar, la conexión quedaba abierta y el archivo bloqueado.
+
 ## [0.4.0] - 2026-10-21
 
 ### Added
@@ -71,7 +88,8 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.1.0...v0.2.0
