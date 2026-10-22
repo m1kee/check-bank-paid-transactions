@@ -21,3 +21,7 @@ tmp_*.py
 
 # Raw bank statements
 pre-process-data/
+
+# SQLite history (contains personal data), wherever --db points
+*.db
+*.db-journal

@@ -10,6 +10,7 @@ Current version: see [`CHANGELOG.md`](CHANGELOG.md) · Roadmap: [`feature-propos
 * **Pesos and dollars:** each movement carries its currency, and each currency is reconciled separately (dollar support not yet validated with a real file).
 * **Date-aware matching:** a payment only covers a purchase of the same amount made before it (or the same day), within a configurable window; repeated amounts are paid oldest first.
 * **Several downloads at once:** movements repeated across downloads are counted once.
+* **History (`--db`):** every download is imported into a SQLite database, so an unpaid purchase stays pending after the bank closes the period, and a payment in the next period can cover it.
 * **Audit info:** lists unpaid purchases and payments that didn't match any purchase.
 * **HTML report:** self-contained dark-mode page that works offline and opens in the browser.
 * **File archiving:** raw inputs are moved to `processed-archive/` with a timestamp; a clean `.xlsx` (real dates) is saved to `data/`.
@@ -28,6 +29,7 @@ check-bank-paid-transactions/
 |   |-- config.py        Settings: file formats, payment terms, matching window
 |   |-- parsers.py       Read the bank export into a normalized DataFrame
 |   |-- dedup.py         Merge downloads without duplicating movements
+|   |-- history.py       SQLite history of every imported movement
 |   |-- matching.py      Pair purchases with payments
 |   |-- analysis.py      Per-currency analysis and totals
 |   |-- formatting.py    Currency formatting
@@ -79,16 +81,20 @@ Arguments:
 * `input_files`: one or more raw files (`.xls`/`.xlsx`). Pass the pesos and dollars files together to get a single report.
 * `-o, --output`: optional prefix for the clean `.xlsx` file (default `cleaned-movements`).
 * `-d, --start-date`: ignore movements before this date (`YYYY-MM-DD`).
+* `--db [RUTA]`: import the files into the history (default `data/bank.db`) and analyze the whole history instead of only these downloads. Without files, it just re-analyzes the history.
 * `--version`: print the version.
 
 Examples:
 ```bash
 uv run bankcheck pre-process-data/pesos.xls pre-process-data/dolares.xls
 uv run bankcheck pre-process-data/pesos.xls -d 2026-10-01 -o october
+uv run bankcheck pre-process-data/pesos.xls --db   # add to the history and check it
+uv run bankcheck --db                              # check the history only
 ```
 
 The tool will:
 1. Read every file (and stop without moving anything if one can't be read).
+   With `--db`, add them to the history (`N movimientos nuevos, M ya existían`).
 2. Save the clean movements to `data/<prefix>_<timestamp>.xlsx`.
 3. Move the raw files to `processed-archive/movements_<timestamp>.xls`.
 4. Print the analysis and open `reports/report_<timestamp>.html`.

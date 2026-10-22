@@ -6,6 +6,13 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-21
+
+### Added
+- Historial persistente en SQLite (`bankcheck/history.py`): cada descarga se importa una vez y los movimientos repetidos solo se marcan como vistos de nuevo. Guarda cuándo se vio cada movimiento por primera y última vez, y un registro de cada importación (09).
+- `--db [RUTA]` en la CLI: importa los archivos al historial (por defecto `data/bank.db`) y analiza todo el historial. Una compra impaga sigue pendiente después del cierre del período, y un pago del período siguiente puede cubrirla. Sin archivos, solo vuelve a analizar el historial.
+- El esquema de la base se versiona y se migra solo al abrirla.
+
 ## [0.2.0] - 2026-10-21
 
 Fase 0 del roadmap (`feature-proposals/`): base de lógica reutilizable, sin UI.
@@ -55,6 +62,7 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/m1kee/check-bank-paid-transactions/releases/tag/v0.1.0
