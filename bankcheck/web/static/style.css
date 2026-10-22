@@ -1,0 +1,118 @@
+:root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --text: #111827;
+    --muted: #6b7280;
+    --border: #e5e7eb;
+    --accent: #2563eb;
+    --danger: #dc2626;
+    --success: #059669;
+    --warning: #b45309;
+    --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+    :root {
+        --bg: #121212;
+        --surface: #1e1e1e;
+        --text: #f3f4f6;
+        --muted: #9ca3af;
+        --border: #374151;
+        --accent: #60a5fa;
+        --danger: #f87171;
+        --success: #34d399;
+        --warning: #fbbf24;
+    }
+}
+
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+}
+main { max-width: 960px; margin: 0 auto; padding: 16px 16px 48px; }
+h1 { font-size: 1.5rem; margin: 8px 0 16px; }
+h2 { font-size: 1.15rem; margin: 28px 0 12px; }
+a { color: var(--accent); }
+.muted { color: var(--muted); }
+
+nav {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: flex;
+    gap: 4px;
+    padding: 8px 16px;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    overflow-x: auto;
+}
+nav a {
+    padding: 8px 12px;
+    border-radius: 8px;
+    color: var(--muted);
+    text-decoration: none;
+    font-weight: 500;
+    white-space: nowrap;
+}
+nav a.active { color: var(--text); background: var(--bg); }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+}
+.card h3 { margin: 0 0 4px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--muted); }
+.card .value { margin: 0; font-size: 1.35rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.danger { color: var(--danger); }
+.success { color: var(--success); }
+.warning { color: var(--warning); }
+
+.list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+}
+.list li { display: flex; justify-content: space-between; gap: 12px; padding: 12px 16px; border-top: 1px solid var(--border); }
+.list li:first-child { border-top: none; }
+.list .desc { font-weight: 500; overflow-wrap: anywhere; }
+.list .meta { font-size: 0.85rem; color: var(--muted); }
+.list .amount { font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.empty { padding: 20px 16px; text-align: center; color: var(--success); }
+
+.table-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); }
+table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid var(--border); white-space: nowrap; }
+th { color: var(--muted); font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+td.desc { white-space: normal; min-width: 180px; }
+td.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr:last-child td { border-bottom: none; }
+
+form.filters { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+form.filters .wide { grid-column: 1 / -1; }
+@media (min-width: 720px) { form.filters { grid-template-columns: 2fr 1fr 1fr 1fr; } form.filters .wide { grid-column: auto; } }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 0.8rem; color: var(--muted); }
+input, select, button {
+    font: inherit;
+    font-size: 1rem; /* avoids zoom on iOS */
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    min-width: 0;
+}
+button { background: var(--accent); border-color: var(--accent); color: #fff; font-weight: 600; cursor: pointer; }
+
+.upload { display: flex; flex-direction: column; gap: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; }
+.notice { padding: 12px 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); margin: 12px 0; }
+.notice.error { border-color: var(--danger); color: var(--danger); }
+.notice ul { margin: 4px 0 0; padding-left: 20px; }
+footer { text-align: center; color: var(--muted); font-size: 0.8rem; margin-top: 32px; }

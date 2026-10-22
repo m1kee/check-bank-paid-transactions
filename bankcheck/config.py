@@ -11,6 +11,9 @@ REPORTS_FOLDER = "reports"
 # SQLite history of every imported movement (used with --db and by the web app)
 DB_PATH = "data/bank.db"
 
+# Original files uploaded through the web app, kept to re-import if the logic changes
+UPLOADS_FOLDER = "data/uploads"
+
 # --- Bank Export Formats ---
 
 # Each section of the bank export starts with a title row (e.g. "Movimientos

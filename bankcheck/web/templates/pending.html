@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Pendientes{% endblock %}
+{% block content %}
+<h1>Compras sin pago</h1>
+
+<form class="filters" method="get" action="/pending">
+    <label class="wide">Desde
+        <input type="date" name="start" value="{{ start or '' }}" onchange="this.form.submit()">
+    </label>
+</form>
+
+{% if not has_history %}
+<div class="notice">Aún no hay movimientos. <a href="/upload">Sube una descarga del banco</a> para empezar.</div>
+{% elif not results %}
+<div class="notice">No hay movimientos desde la fecha elegida.</div>
+{% endif %}
+
+{% for result in results %}
+{% set currency = result.currency %}
+{% if results | length > 1 or currency != 'CLP' %}<h2>{{ currency_names.get(currency, currency) }}</h2>{% endif %}
+<div class="cards">
+    <div class="card"><h3>Sin pagar</h3><p class="value {{ 'danger' if result.total_unpaid else 'success' }}">{{ result.total_unpaid | money(currency) }}</p></div>
+    <div class="card"><h3>Compras sin pago</h3><p class="value">{{ result.unpaid | length }} de {{ (result.unpaid | length) + (result.matches | length) }}</p></div>
+    <div class="card"><h3>Pagos</h3><p class="value">{{ result.total_payments | money(currency) }}</p></div>
+    <div class="card"><h3>Compras (1 cuota)</h3><p class="value">{{ result.total_purchases | money(currency) }}</p></div>
+</div>
+
+<h2>Pendientes</h2>
+<ul class="list">
+    {% for row in result.unpaid.to_dict('records') %}
+    <li>
+        <div>
+            <div class="desc">{{ row['Description'] }}</div>
+            <div class="meta">{{ row['Date'] | date }}{% if row['City'] %} · {{ row['City'] }}{% endif %} · hace {{ row['Age'] }} {{ 'día' if row['Age'] == 1 else 'días' }}</div>
+        </div>
+        <div class="amount danger">{{ row['Amount'] | money(currency) }}</div>
+    </li>
+    {% else %}
+    <li class="empty">Todas las compras de 1 cuota tienen un pago asociado.</li>
+    {% endfor %}
+</ul>
+
+{% if not result.orphan_payments.empty %}
+<h2>Pagos sin compra asociada</h2>
+<p class="muted">No calzan con ninguna compra del mismo monto en los días previos. Pueden cubrir varias compras juntas o una compra fuera del historial.</p>
+<ul class="list">
+    {% for row in result.orphan_payments.to_dict('records') %}
+    <li>
+        <div>
+            <div class="desc">{{ row['Description'] }}</div>
+            <div class="meta">{{ row['Date'] | date }}</div>
+        </div>
+        <div class="amount warning">{{ row['Amount'] | money(currency) }}</div>
+    </li>
+    {% endfor %}
+</ul>
+{% endif %}
+{% endfor %}
+{% endblock %}

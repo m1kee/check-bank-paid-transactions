@@ -1,0 +1,23 @@
+<p class="muted">
+    {{ total }} {{ 'movimiento' if total == 1 else 'movimientos' }}{% if total > page_size %}, se muestran los {{ page_size }} más recientes{% endif %}.
+</p>
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr><th>Fecha</th><th>Descripción</th><th>Cuotas</th><th>Ciudad</th><th class="num">Monto</th></tr>
+        </thead>
+        <tbody>
+            {% for row in rows %}
+            <tr>
+                <td>{{ row['Date'] | date }}</td>
+                <td class="desc">{{ row['Description'] }}</td>
+                <td>{{ row['Installments'] }}</td>
+                <td>{{ row['City'] }}</td>
+                <td class="num">{{ row['Amount'] | money(row['Currency']) }}</td>
+            </tr>
+            {% else %}
+            <tr><td colspan="5" class="muted">No hay movimientos con estos filtros.</td></tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -9,12 +9,13 @@ Herramienta que lee la **vista de movimientos del período en curso** del banco 
 ```bash
 uv sync                                  # instalar / actualizar el entorno
 uv run bankcheck <archivo.xls> [...]     # correr la CLI
+uv run bankcheck-web --reload            # app web en http://127.0.0.1:8000
 uv run python -m unittest -v             # tests
 ```
 
 ## Convenciones
 - El código, los identificadores y los comentarios van en inglés. Los mensajes al usuario (consola, reporte HTML) van en español.
-- La lógica va en `bankcheck/` y no hace `print`. La CLI (`bankcheck/cli.py`) solo orquesta y muestra.
+- La lógica va en `bankcheck/` y no hace `print`. La CLI (`bankcheck/cli.py`) y la app web (`bankcheck/web/`) solo orquestan y muestran.
 - Commits con [Conventional Commits](https://www.conventionalcommits.org/es/): `feat:`, `fix:`, `docs:`, `chore:`, `test:`, `refactor:`, `perf:`, `ci:`. Para un cambio incompatible, `feat!:` o un pie `BREAKING CHANGE:`.
 - **Nunca** commitear datos bancarios reales (`pre-process-data/`, `data/`, `processed-archive/`, `reports/` están en `.gitignore`). Los tests usan datos inventados (`tests/helpers.py`).
 

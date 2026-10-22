@@ -40,7 +40,7 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 | 28 | [Servidor casero en el mini PC](28-servidor-casero.md) | M |
 | 26 | [Contenedor, dependencias y despliegue](26-contenedor-y-despliegue.md) | S — 🟡 `pyproject.toml` + uv hechos en v0.2.0; falta el contenedor |
 | 09 | [Historial en SQLite](09-historial-sqlite.md) | L — ✅ v0.3.0 (CLI con `--db`; la tabla `matches` llega con 03) |
-| 22 | [App web (MVP)](22-app-web.md) | L |
+| 22 | [App web (MVP)](22-app-web.md) | L — ✅ v0.4.0 (falta probarla en el celular vía Tailscale) |
 | 24 | [Logging e idioma consistente](24-logging-e-idioma.md) | S |
 
 ## Fase 2 · Conciliación completa en la UI
