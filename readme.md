@@ -11,6 +11,7 @@ Current version: see [`CHANGELOG.md`](CHANGELOG.md) · Roadmap: [`feature-propos
 * **Date-aware matching:** a payment only covers a purchase of the same amount made before it (or the same day), within a configurable window; repeated amounts are paid oldest first.
 * **Several downloads at once:** movements repeated across downloads are counted once.
 * **History (`--db`):** every download is imported into a SQLite database, so an unpaid purchase stays pending after the bank closes the period, and a payment in the next period can cover it.
+* **Web app (`bankcheck-web`):** upload downloads from any device, see unpaid purchases and browse the history. Mobile-first, works without JavaScript.
 * **Audit info:** lists unpaid purchases and payments that didn't match any purchase.
 * **HTML report:** self-contained dark-mode page that works offline and opens in the browser.
 * **File archiving:** raw inputs are moved to `processed-archive/` with a timestamp; a clean `.xlsx` (real dates) is saved to `data/`.
@@ -34,9 +35,12 @@ check-bank-paid-transactions/
 |   |-- analysis.py      Per-currency analysis and totals
 |   |-- formatting.py    Currency formatting
 |   |-- report_html.py   HTML report rendering
+|   |-- web/             Web app (FastAPI + Jinja2 + HTMX)
 |-- tests/               Unit tests (synthetic data only)
 |-- feature-proposals/   Roadmap and feature ideas
 |-- CHANGELOG.md
+|-- Dockerfile         Web app image
+|-- docker-compose.yml Runs the web app with the data in ./data
 |
 |-- pre-process-data/    Put your raw .xls downloads here (git-ignored)
 |-- data/                Clean .xlsx files (git-ignored)
@@ -82,6 +86,7 @@ Arguments:
 * `-o, --output`: optional prefix for the clean `.xlsx` file (default `cleaned-movements`).
 * `-d, --start-date`: ignore movements before this date (`YYYY-MM-DD`).
 * `--db [RUTA]`: import the files into the history (default `data/bank.db`) and analyze the whole history instead of only these downloads. Without files, it just re-analyzes the history.
+* `-v, --verbose` / `-q, --quiet`: more detail (debugging) / only the report, warnings and errors.
 * `--version`: print the version.
 
 Examples:
@@ -98,6 +103,45 @@ The tool will:
 2. Save the clean movements to `data/<prefix>_<timestamp>.xlsx`.
 3. Move the raw files to `processed-archive/movements_<timestamp>.xls`.
 4. Print the analysis and open `reports/report_<timestamp>.html`.
+
+Progress messages go to stderr and the analysis to stdout, so `uv run bankcheck x.xls -q > analisis.txt` saves just the report. The exit code is `1` when a file or the history can't be read.
+
+---
+
+## 🌐 Web App
+
+```bash
+uv run bankcheck-web                    # http://127.0.0.1:8000
+uv run bankcheck-web --host 0.0.0.0     # reachable from other devices on the network
+uv run bankcheck-web --reload           # restart on code changes (development)
+```
+
+Pages:
+* **Pendientes** (`/pending`): unpaid purchases over the whole history, with totals and age; optional start date.
+* **Subir** (`/upload`): upload one or more `.xls`/`.xlsx` downloads; shows how many movements were new. If one file can't be read, nothing is imported.
+* **Movimientos** (`/movements`): the whole history, with search and currency/date filters.
+
+It uses the same history as `bankcheck --db`. Settings, through environment variables:
+
+| Variable | Default | |
+|---|---|---|
+| `BANKCHECK_DATA_DIR` | `data` | Base folder for the clean files, the history and the uploads (also used by the CLI) |
+| `BANKCHECK_DB` | `<data dir>/bank.db` | SQLite history |
+| `BANKCHECK_UPLOADS_DIR` | `<data dir>/uploads` | Uploaded original files |
+| `BANKCHECK_PASSWORD` | *(none)* | If set, every page asks for it (any user name) |
+
+Set a password whenever the app listens on anything other than `127.0.0.1`.
+
+### Docker
+
+```bash
+echo "BANKCHECK_PASSWORD=una-clave-larga" > .env   # required; .env is git-ignored
+mkdir -p data                                     # history and uploads, mounted at /data
+docker compose up -d --build                      # http://127.0.0.1:8000
+docker compose logs -f                            # see imports and requests
+```
+
+The port is published on `127.0.0.1` only. To reach it from other devices, set `BANKCHECK_BIND` in `.env` (e.g. the machine's Tailscale IP) or put `tailscale serve 8000` in front of it. `BANKCHECK_PORT` and `TZ` (default `America/Santiago`) can also go in `.env`. To update: `git pull && docker compose up -d --build`.
 
 ---
 

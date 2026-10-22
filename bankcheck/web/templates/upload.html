@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Subir{% endblock %}
+{% block content %}
+<h1>Subir movimientos</h1>
+
+{% if error %}<div class="notice error">{{ error }}</div>{% endif %}
+
+{% if imports %}
+<div class="notice">
+    {% for item in imports %}
+    <div>
+        <strong>{{ item.name }}</strong> ({{ item.sections | join(', ') }}):
+        {{ item.new_count }} {{ 'movimiento nuevo' if item.new_count == 1 else 'movimientos nuevos' }},
+        {{ item.existing_count }} ya {{ 'existía' if item.existing_count == 1 else 'existían' }}.
+        {% if item.warnings %}<ul class="warning">{% for w in item.warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
+    </div>
+    {% endfor %}
+    <p><a href="/pending">Ver pendientes →</a></p>
+</div>
+{% endif %}
+
+<form class="upload" method="post" action="/upload" enctype="multipart/form-data">
+    <label>Descargas del banco (.xls / .xlsx), en pesos o dólares
+        <input type="file" name="files" accept=".xls,.xlsx" multiple required>
+    </label>
+    <button type="submit">Importar</button>
+    <p class="muted">Puedes subir la misma descarga varias veces: los movimientos repetidos se cuentan una sola vez.</p>
+</form>
+{% endblock %}

@@ -33,6 +33,9 @@ Que todo se haga desde el navegador, en el Mac, el PC o el celular: subir los mo
 | 4 | Notificaciones al celular | [20](20-notificaciones.md) |
 
 ## Criterios de aceptación (MVP)
-- [ ] Desde el celular se puede subir el archivo de pesos y ver los pendientes.
-- [ ] Subir dos veces el mismo archivo no duplica nada.
-- [ ] Los pendientes coinciden con lo que da la CLI con el mismo archivo.
+- [ ] Desde el celular se puede subir el archivo de pesos y ver los pendientes. *(diseño mobile-first listo; falta probarlo en un celular real, idealmente ya en el servidor)*
+- [x] Subir dos veces el mismo archivo no duplica nada.
+- [x] Los pendientes coinciden con lo que da la CLI con el mismo archivo.
+
+## Estado (v0.4.0)
+MVP en `bankcheck/web/`: páginas Pendientes, Subir y Movimientos sobre el historial de [09](09-historial-sqlite.md). HTMX va incluido en `bankcheck/web/static/` (no usa CDN). El login es HTTP Basic con una contraseña única (`BANKCHECK_PASSWORD`), que el navegador recuerda.

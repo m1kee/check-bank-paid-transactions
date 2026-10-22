@@ -1,6 +1,12 @@
+import os
+
 # --- File Paths ---
+# Folder for the clean .xlsx files, the history and the uploads. Relative to the
+# current directory unless BANKCHECK_DATA_DIR says otherwise (e.g. /data in Docker).
+DATA_DIR = os.environ.get("BANKCHECK_DATA_DIR", "data")
+
 # Folder where the cleaned .xlsx files are saved
-CLEAN_DATA_FOLDER = "data"
+CLEAN_DATA_FOLDER = DATA_DIR
 
 # Folder to store raw files after they are processed
 PROCESSED_ARCHIVE_FOLDER = "processed-archive"
@@ -9,7 +15,10 @@ PROCESSED_ARCHIVE_FOLDER = "processed-archive"
 REPORTS_FOLDER = "reports"
 
 # SQLite history of every imported movement (used with --db and by the web app)
-DB_PATH = "data/bank.db"
+DB_PATH = os.path.join(DATA_DIR, "bank.db")
+
+# Original files uploaded through the web app, kept to re-import if the logic changes
+UPLOADS_FOLDER = os.path.join(DATA_DIR, "uploads")
 
 # --- Bank Export Formats ---
 

@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block title %}Movimientos{% endblock %}
+{% block content %}
+<h1>Movimientos</h1>
+
+<form class="filters" method="get" action="/movements"
+      hx-get="/movements" hx-target="#movements-table" hx-push-url="true"
+      hx-trigger="input changed delay:300ms from:input[type=search], change">
+    <label class="wide">Buscar
+        <input type="search" name="q" value="{{ q }}" placeholder="Descripción">
+    </label>
+    <label>Moneda
+        <select name="currency">
+            <option value="">Todas</option>
+            {% for c in currencies %}<option value="{{ c }}" {{ 'selected' if c == currency }}>{{ c }}</option>{% endfor %}
+        </select>
+    </label>
+    <label>Desde <input type="date" name="date_from" value="{{ date_from or '' }}"></label>
+    <label>Hasta <input type="date" name="date_to" value="{{ date_to or '' }}"></label>
+    <noscript><button type="submit">Filtrar</button></noscript>
+</form>
+
+<div id="movements-table">{% include "_movements_table.html" %}</div>
+{% endblock %}

@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="light dark">
+    <title>{% block title %}bankcheck{% endblock %} · bankcheck</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
+    <script src="{{ url_for('static', path='htmx.min.js') }}" defer></script>
+</head>
+<body>
+    <nav>
+        <a href="/pending" class="{{ 'active' if active == 'pending' }}">Pendientes</a>
+        <a href="/upload" class="{{ 'active' if active == 'upload' }}">Subir</a>
+        <a href="/movements" class="{{ 'active' if active == 'movements' }}">Movimientos</a>
+    </nav>
+    <main>
+        {% block content %}{% endblock %}
+        <footer>bankcheck v{{ version }}</footer>
+    </main>
+</body>
+</html>
