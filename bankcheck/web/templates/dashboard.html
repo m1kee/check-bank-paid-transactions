@@ -1,128 +1,257 @@
 {% extends "base.html" %}
-{% block title %}Inicio{% endblock %}
-{% block content %}
-<h1>Gastos de {{ month | month_name }}</h1>
-
-{% if not has_history %}
-<div class="notice">Aún no hay movimientos. <a href="/upload">Sube una descarga del banco</a> para empezar.</div>
-{% else %}
-<form class="filters" method="get" action="/dashboard">
-    <label>Mes
-        <select name="month" onchange="this.form.submit()">
-            {% for m in months %}<option value="{{ m }}" {{ 'selected' if m == month }}>{{ m | month_name }}</option>{% endfor %}
-        </select>
-    </label>
+{% from "_icons.html" import icon %}
+{% block title %}Resumen{% endblock %}
+{% block heading %}Resumen{% endblock %}
+{% block subheading %}{% if has_history %}Gastos de {{ month | month_name }}{% if currency != 'CLP' %} · {{ currency }}{% endif %}{% else %}Tus finanzas en un vistazo{% endif %}{% endblock %}
+{% block actions %}
+{% if has_history %}
+<form class="inline-form" method="get" action="/dashboard">
+    <select name="month" onchange="this.form.submit()" aria-label="Mes">
+        {% for m in months %}<option value="{{ m }}" {{ 'selected' if m == month }}>{{ m | month_name }}</option>{% endfor %}
+    </select>
     {% if currencies | length > 1 %}
-    <label>Moneda
-        <select name="currency" onchange="this.form.submit()">
-            {% for c in currencies %}<option value="{{ c }}" {{ 'selected' if c == currency }}>{{ c }}</option>{% endfor %}
-        </select>
-    </label>
+    <select name="currency" onchange="this.form.submit()" aria-label="Moneda">
+        {% for c in currencies %}<option value="{{ c }}" {{ 'selected' if c == currency }}>{{ c }}</option>{% endfor %}
+    </select>
     {% endif %}
-    <noscript><button type="submit">Ver</button></noscript>
+    <noscript><button class="btn secondary" type="submit">Ver</button></noscript>
 </form>
+{% endif %}
+<a class="btn" href="/upload">{{ icon("upload") }}Subir descarga</a>
+{% endblock %}
+
+{% block content %}
+{% if not has_history %}
+<div class="card empty-state">
+    <div class="row-icon">{{ icon("upload") }}</div>
+    <h3>Aún no hay movimientos</h3>
+    <p>Sube la descarga de movimientos del banco (pesos o dólares) para ver tu resumen.</p>
+    <a class="btn" href="/upload">{{ icon("upload") }}Subir descarga</a>
+</div>
+{% else %}
 
 {% set delta = insights.total_spent - insights.previous_spent %}
-<div class="cards">
-    <div class="card hero"><h3>Gastado</h3><p class="value">{{ insights.total_spent | money(currency) }}</p>
-        <p class="meta">{{ '+' if delta > 0 }}{{ delta | money(currency) }} vs {{ (month - 1) | month_name }}</p></div>
-    <div class="card"><h3>Sin pagar</h3>
-        <p class="value"><a href="/pending">{{ (pending.total_unpaid if pending else 0) | money(currency) }}</a></p></div>
+<div class="kpis">
+    <div class="card kpi">
+        <div class="kpi-label">{{ icon("wallet") }}Gastado en {{ month | month_name }}</div>
+        <div class="kpi-value hero">{{ insights.total_spent | money(currency) }}</div>
+        <div class="kpi-meta">
+            {% if insights.previous_spent %}
+            {% set pct = (delta / insights.previous_spent * 100) | round | int %}
+            <span class="delta {{ 'up' if delta > 0 else 'down' if delta < 0 else 'flat' }}">{{ '▲' if delta > 0 else '▼' if delta < 0 else '•' }} {{ pct | abs }}%</span>
+            <span>vs {{ previous | month_name }} ({{ insights.previous_spent | money(currency) }})</span>
+            {% else %}<span>Sin datos de {{ previous | month_name }}</span>{% endif %}
+        </div>
+        {{ charts.trend }}
+    </div>
+    <a class="card kpi" href="/pending">
+        <div class="kpi-label">{{ icon("clock") }}Sin pagar</div>
+        <div class="kpi-value {{ 'text-danger' if pending and pending.total_unpaid }}">{{ (pending.total_unpaid if pending else 0) | money(currency) }}</div>
+        <div class="kpi-meta">
+            {% if pending and not pending.unpaid.empty %}
+            {{ pending.unpaid | length }} {{ 'compra' if pending.unpaid | length == 1 else 'compras' }} · la más antigua hace {{ oldest }} {{ 'día' if oldest == 1 else 'días' }}
+            {% else %}<span class="badge success">{{ icon("check") }}Todo al día</span>{% endif %}
+        </div>
+    </a>
     {% for u in upcoming if u.count %}
-    <div class="card"><h3>Próxima facturación ({{ u.currency }})</h3>
-        <p class="value"><a href="/pending">{{ u.amount | money(u.currency) }}</a></p>
-        <p class="meta">{{ u.count }} {{ 'compra' if u.count == 1 else 'compras' }} desde el {{ u.since | date }}</p></div>
+    <a class="card kpi" href="/pending">
+        <div class="kpi-label">{{ icon("dollar") }}Próxima facturación ({{ u.currency }})</div>
+        <div class="kpi-value">{{ u.amount | money(u.currency) }}</div>
+        <div class="kpi-meta">{{ u.count }} {{ 'compra' if u.count == 1 else 'compras' }} desde el {{ u.since | date }}</div>
+    </a>
     {% endfor %}
     {% if currency in insights.plans_summary %}
-    <div class="card"><h3>Cuotas por mes</h3>
-        <p class="value"><a href="/installments">{{ insights.plans_summary[currency][0] | money(currency) }}</a></p></div>
+    {% set plan = insights.plans_summary[currency] %}
+    <a class="card kpi" href="/installments">
+        <div class="kpi-label">{{ icon("calendar") }}Cuotas por mes</div>
+        <div class="kpi-value">{{ plan[0] | money(currency) }}</div>
+        <div class="kpi-meta">Deuda total en cuotas {{ plan[1] | money(currency) }}</div>
+    </a>
     {% endif %}
-    {% set subs = insights.subscriptions | selectattr('currency', 'equalto', currency) | list %}
-    {% if subs %}
-    <div class="card"><h3>Suscripciones</h3>
-        <p class="value"><a href="/subscriptions">{{ subs | length }}</a></p></div>
+    {% if subscriptions %}
+    <a class="card kpi" href="/subscriptions">
+        <div class="kpi-label">{{ icon("repeat") }}Suscripciones</div>
+        <div class="kpi-value">{{ subscriptions | sum(attribute='amount') | money(currency) }}<span class="muted small"> /mes</span></div>
+        <div class="kpi-meta">{{ subscriptions | length }} activas · {{ subscriptions | sum(attribute='annual_cost') | money(currency) }} al año</div>
+    </a>
     {% endif %}
 </div>
 
-{% if budgets %}
-<h2>Presupuestos</h2>
-<ul class="list budgets">
-    {% for line, meter in budgets %}
-    <li>
-        <div class="budget-head">
-            <span class="desc">{{ line.category }}</span>
-            <span class="amount">{{ line.spent | money }} / {{ line.budget | money }}</span>
-        </div>
-        {{ meter | safe }}
-        <div class="meta">
-            {{ (line.ratio * 100) | round | int }}% · {{ (line.month_ratio * 100) | round | int }}% del mes transcurrido
-            {% if line.status == 'over' %}<span class="tag danger">✕ Excedido</span>
-            {% elif line.status == 'warning' %}<span class="tag warning">▲ Sobre el ritmo</span>{% endif %}
-        </div>
-    </li>
-    {% endfor %}
-</ul>
-<p class="muted">La línea marca cuánto del mes ha pasado: si la barra va más adelante, vas sobre el ritmo. <a href="/categories">Editar presupuestos</a></p>
-{% endif %}
-
-{% if important_alerts or novelties %}
-<h2>⚠️ Revisar</h2>
-{% if important_alerts %}
-<ul class="list">
-    {% for alert in important_alerts %}
-    {% set row = alert.movements[-1] %}
-    <li>
-        <div>
-            <div class="desc">{{ row['Description'] }}</div>
-            <div class="meta"><span class="tag warning">▲ {{ alert.label }}</span> {{ row['Date'] | date }}{% if alert.movements | length > 1 %} · {{ alert.movements | length }} cobros{% endif %} · {{ alert.detail }}</div>
-        </div>
-        <div class="amount">{{ row['Amount'] | money(row['Currency']) }}</div>
-    </li>
-    {% endfor %}
-</ul>
-{% endif %}
-{% if novelties %}
-<details class="card">
-    <summary>Comercios y ciudades nuevos ({{ novelties | length }})</summary>
-    <ul class="list flat">
-        {% for alert in novelties %}
-        {% set row = alert.movements[0] %}
-        <li>
+<div class="grid">
+    <section class="card span-8">
+        <div class="card-head">
             <div>
-                <div class="desc">{{ row['City'] if alert.kind == 'new_city' else row['Description'] }}</div>
-                <div class="meta">{{ alert.label }} · {{ row['Date'] | date }}{% if alert.kind == 'new_city' %} · {{ row['Description'] }}{% endif %}</div>
+                <h2 class="card-title">Ritmo del mes</h2>
+                <div class="card-sub">Gasto acumulado día a día, comparado con {{ previous | month_name }}</div>
             </div>
-            <div class="amount">{{ row['Amount'] | money(row['Currency']) }}</div>
-        </li>
-        {% endfor %}
-    </ul>
-</details>
-{% endif %}
-{% endif %}
+        </div>
+        {{ charts.pace }}
+    </section>
+    <section class="card span-4 keep">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Presupuestos</h2>
+                <div class="card-sub">La línea marca cuánto del mes ha pasado</div>
+            </div>
+            <a class="link" href="/categories">Editar</a>
+        </div>
+        {% if budgets %}
+        <ul class="rows">
+            {% for line, meter in budgets %}
+            <li class="stack">
+                <div class="split">
+                    <span class="row-title">{{ line.category }}</span>
+                    <span class="row-amount">{{ line.spent | money }} <span class="muted small">/ {{ line.budget | money }}</span></span>
+                </div>
+                {{ meter }}
+                <div class="row-meta">
+                    <span>{{ (line.ratio * 100) | round | int }}% usado</span>
+                    {% if line.status == 'over' %}<span class="badge danger">✕ Excedido</span>
+                    {% elif line.status == 'warning' %}<span class="badge warning">▲ Sobre el ritmo</span>
+                    {% else %}<span class="badge success">✓ En ritmo</span>{% endif %}
+                </div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <div class="row-icon">{{ icon("wallet") }}</div>
+            <p>Define un presupuesto mensual por categoría para ver si vas en ritmo.</p>
+            <a class="btn secondary sm" href="/categories">Definir presupuestos</a>
+        </div>
+        {% endif %}
+    </section>
+</div>
 
-<h2>Gasto por categoría</h2>
-<div class="card">{{ charts.categories }}</div>
-<details class="card">
-    <summary>Ver tabla</summary>
-    <div class="table-wrap flat">
-        <table>
-            <thead><tr><th>Categoría</th><th class="num">Compras</th><th class="num">{{ month | month_name }}</th><th class="num">{{ (month - 1) | month_name }}</th></tr></thead>
-            <tbody>
-                {% for r in insights.spending.to_dict('records') %}
-                <tr><td><a href="/movements?category={{ r['Category'] | urlencode }}">{{ r['Category'] }}</a></td><td class="num">{{ r['Count'] | int }}</td>
-                    <td class="num">{{ r['Amount'] | money(currency) }}</td><td class="num">{{ r['Previous'] | money(currency) }}</td></tr>
-                {% else %}<tr><td colspan="4" class="muted">Sin gastos este mes.</td></tr>{% endfor %}
-            </tbody>
-        </table>
-    </div>
-</details>
+<div class="grid">
+    <section class="card span-7">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Gasto por categoría</h2>
+                <div class="card-sub">{{ month | month_name }} vs {{ previous | month_name }}</div>
+            </div>
+            <a class="link" href="/categories">Categorías</a>
+        </div>
+        {{ charts.categories }}
+        <details class="disclosure mt">
+            <summary>Ver tabla</summary>
+            <div class="table-wrap">
+                <table class="data">
+                    <thead><tr><th>Categoría</th><th class="num">Compras</th><th class="num">{{ month | month_name }}</th><th class="num">{{ previous | month_name }}</th></tr></thead>
+                    <tbody>
+                        {% for r in insights.spending.to_dict('records') %}
+                        <tr><td><a href="/movements?category={{ r['Category'] | urlencode }}">{{ r['Category'] }}</a></td><td class="num">{{ r['Count'] | int }}</td>
+                            <td class="num">{{ r['Amount'] | money(currency) }}</td><td class="num">{{ r['Previous'] | money(currency) }}</td></tr>
+                        {% else %}<tr><td colspan="4" class="muted">Sin gastos este mes.</td></tr>{% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </details>
+    </section>
+    <section class="card span-5">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Revisar</h2>
+                <div class="card-sub">Cobros que conviene mirar dos veces</div>
+            </div>
+        </div>
+        {% if important_alerts %}
+        <ul class="rows">
+            {% for alert in important_alerts %}
+            {% set row = alert.movements[-1] %}
+            <li>
+                <div class="row-with-icon">
+                    <div class="row-icon warning">{{ icon("alert") }}</div>
+                    <div class="row-main">
+                        <div class="row-title">{{ row['Description'] }}</div>
+                        <div class="row-meta"><span class="badge warning">{{ alert.label }}</span>{{ row['Date'] | date }}{% if alert.movements | length > 1 %} · {{ alert.movements | length }} cobros{% endif %}</div>
+                    </div>
+                </div>
+                <div class="row-amount">{{ row['Amount'] | money(row['Currency']) }}</div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <div class="empty-state">
+            <div class="row-icon">{{ icon("check-circle") }}</div>
+            <p>Sin cobros duplicados ni montos inusuales.</p>
+        </div>
+        {% endif %}
+        {% if novelties %}
+        <details class="disclosure mt">
+            <summary>Comercios y ciudades nuevos ({{ novelties | length }})</summary>
+            <ul class="rows">
+                {% for alert in novelties %}
+                {% set row = alert.movements[0] %}
+                <li>
+                    <div class="row-main">
+                        <div class="row-title">{{ row['City'] if alert.kind == 'new_city' else row['Description'] }}</div>
+                        <div class="row-meta">{{ alert.label }} · {{ row['Date'] | date }}{% if alert.kind == 'new_city' %} · {{ row['Description'] }}{% endif %}</div>
+                    </div>
+                    <div class="row-amount">{{ row['Amount'] | money(row['Currency']) }}</div>
+                </li>
+                {% endfor %}
+            </ul>
+        </details>
+        {% endif %}
+    </section>
+</div>
 
-<h2>Gasto por día</h2>
-<div class="card">{{ charts.daily }}</div>
+<div class="grid">
+    <section class="card span-6">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Últimos 12 meses</h2>
+                <div class="card-sub">Gasto total por mes; {{ month | month_name }} destacado</div>
+            </div>
+        </div>
+        {{ charts.monthly }}
+        <details class="disclosure mt">
+            <summary>Ver tabla</summary>
+            <table class="data"><tbody>
+                {% for m, a in monthly | reverse %}<tr><td>{{ m | month_name }}</td><td class="num">{{ a | money(currency) }}</td></tr>{% endfor %}
+            </tbody></table>
+        </details>
+    </section>
+    <section class="card span-6">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Gasto por día</h2>
+                <div class="card-sub">{{ month | month_name }}</div>
+            </div>
+            <a class="link" href="/movements">Movimientos</a>
+        </div>
+        {{ charts.daily }}
+    </section>
+</div>
 
-{% if charts.age %}
-<h2>Pendiente por antigüedad</h2>
-<div class="card">{{ charts.age }}</div>
+{% if charts.age or charts.projection %}
+<div class="grid">
+    {% if charts.age %}
+    <section class="card span-6">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Pendiente por antigüedad</h2>
+                <div class="card-sub">Cuánto lleva esperando un pago</div>
+            </div>
+            <a class="link" href="/pending">Pendientes</a>
+        </div>
+        {{ charts.age }}
+    </section>
+    {% endif %}
+    {% if charts.projection %}
+    <section class="card span-6">
+        <div class="card-head">
+            <div>
+                <h2 class="card-title">Cuotas de los próximos meses</h2>
+                <div class="card-sub">Cómo baja la carga de cuotas</div>
+            </div>
+            <a class="link" href="/installments">Cuotas</a>
+        </div>
+        {{ charts.projection }}
+    </section>
+    {% endif %}
+</div>
 {% endif %}
 {% endif %}
 {% endblock %}

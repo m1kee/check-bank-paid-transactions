@@ -29,7 +29,7 @@ from bankcheck import billing
 from bankcheck import categories as cat
 from bankcheck.analysis import analyze
 from bankcheck.export import pending_csv, pending_text
-from bankcheck.formatting import CURRENCY_NAMES, format_amount
+from bankcheck.formatting import CURRENCY_NAMES, compact_amount, format_amount
 from bankcheck.insights import build_insights, latest_month, month_name, pending_by_age
 from bankcheck.installments import installment_plans, projection, summary
 from bankcheck.notify import NtfySettings, notify_after_import, sample_message, send
@@ -168,6 +168,9 @@ def create_app(settings: Settings = None) -> FastAPI:
     templates.env.globals.update(
         version=__version__, currency_names=CURRENCY_NAMES, chart_css=Markup(charts.CSS),
         status_labels=reconcile.STATUS_LABELS, uncategorized=cat.UNCATEGORIZED, payments_category=cat.PAYMENTS,
+        # Charts used per row (progress bars, trends); the functions escape their own text
+        meter=lambda *args, **kwargs: Markup(charts.meter(*args, **kwargs)),
+        sparkline=lambda *args, **kwargs: Markup(charts.sparkline(*args, **kwargs)),
     )
 
     def render(request: Request, name: str, status_code: int = 200, **context):
@@ -191,13 +194,47 @@ def create_app(settings: Settings = None) -> FastAPI:
         pending = results.get(currency)
 
         fmt = lambda value: format_amount(value, currency)
-        daily = [(str(d.day), float(a), _date(d)) for d, a in zip(insights.daily["Date"], insights.daily["Amount"])]
-        by_category = [(r["Category"], float(r["Amount"]), float(r["Previous"])) for r in insights.spending.to_dict("records")]
+        axis = lambda value: compact_amount(value, currency)
+        previous = selected - 1
+        days = list(insights.daily["Date"])
+
+        # Pace: cumulative spending this month vs the previous one, by day of the month
+        pace_days = max(len(insights.pace), len(insights.previous_pace))
+        pad = lambda values: values + [None] * (pace_days - len(values))
+        budget_total = sum(line.budget for line in insights.budgets)
+        pace = charts.line(
+            [(str(d), f"Día {d}") for d in range(1, pace_days + 1)],
+            [
+                {"name": month_name(selected), "role": "series", "values": pad(insights.pace), "area": True},
+                {"name": month_name(previous), "role": "previous", "values": pad(insights.previous_pace)},
+            ],
+            fmt, axis, tick_every=5, height=220, empty="Sin gastos este mes.",
+            reference=(budget_total, f"Presupuesto {axis(budget_total)}") if budget_total else None,
+        )
+        monthly = list(zip(insights.monthly["Month"], insights.monthly["Amount"]))
         chart_html = {
-            "daily": Markup(charts.columns(daily, fmt, tick_every=5, empty="Sin gastos este mes.")),
-            "categories": Markup(charts.bars(by_category, fmt, previous_label=month_name(selected - 1),
-                                             current_label=month_name(selected), empty="Sin gastos este mes.")),
-            "age": Markup(charts.bars(pending_by_age(pending), fmt)) if pending is not None and not pending.unpaid.empty else None,
+            "pace": Markup(pace),
+            "monthly": Markup(charts.columns(
+                [(month_name(m, short=True)[:3], float(a), month_name(m)) for m, a in monthly],
+                fmt, axis, tick_every=2, emphasis=len(monthly) - 1, height=170,
+            )),
+            "daily": Markup(charts.columns(
+                [(str(d.day), float(a), _date(d)) for d, a in zip(days, insights.daily["Amount"])],
+                fmt, axis, tick_every=5, height=170, empty="Sin gastos este mes.",
+            )),
+            "categories": Markup(charts.bars(
+                [(r["Category"], float(r["Amount"]), float(r["Previous"])) for r in insights.spending.to_dict("records")],
+                fmt, previous_label=month_name(previous), current_label=month_name(selected), share=True,
+                empty="Sin gastos este mes.",
+            )),
+            "age": Markup(charts.bars(pending_by_age(pending), fmt))
+            if pending is not None and not pending.unpaid.empty else None,
+            "projection": Markup(charts.columns(
+                [(month_name(m, short=True)[:3], float(a), month_name(m))
+                 for m, a in zip(insights.projection["Month"], insights.projection["Amount"])],
+                fmt, axis, tick_every=2, height=150,
+            )) if insights.projection is not None and not insights.projection.empty else None,
+            "trend": Markup(charts.sparkline([a for _, a in monthly][-6:], "Gasto de los últimos 6 meses")),
         }
         budgets = [
             (line, Markup(charts.meter(line.ratio, line.month_ratio, line.status,
@@ -206,12 +243,15 @@ def create_app(settings: Settings = None) -> FastAPI:
         ]
         # Duplicates and unusual amounts first; "new" merchants and cities are informative and can be many
         novelty_kinds = (alerts_module.NEW_MERCHANT, alerts_module.NEW_CITY)
+        subscriptions = [s for s in insights.subscriptions if s.currency == currency]
+        oldest = int((pd.Timestamp(datetime.date.today()) - pending.unpaid["Date"].min()).days)             if pending is not None and not pending.unpaid.empty else None
         return render(
             request, "dashboard.html", active="dashboard", insights=insights, months=months, month=selected,
-            upcoming=billing.load_upcoming(conn, view.movements),
+            previous=previous, upcoming=billing.load_upcoming(conn, view.movements),
             important_alerts=[a for a in insights.alerts if a.kind not in novelty_kinds],
             novelties=[a for a in insights.alerts if a.kind in novelty_kinds],
-            currencies=currencies, currency=currency, pending=pending, charts=chart_html, budgets=budgets,
+            currencies=currencies, currency=currency, pending=pending, oldest=oldest, charts=chart_html,
+            budgets=budgets, subscriptions=subscriptions, monthly=monthly,
             has_history=not view.movements.empty,
         )
 
@@ -230,6 +270,10 @@ def create_app(settings: Settings = None) -> FastAPI:
             request, "pending.html", active="pending", results=results, start=start, end=end,
             has_history=not view.movements.empty, copy_text=pending_text(results),
             upcoming={u.currency: u for u in billing.load_upcoming(conn, view.movements)},
+            age_charts={
+                r.currency: Markup(charts.bars(pending_by_age(r), lambda v, c=r.currency: format_amount(v, c)))
+                for r in results if not r.unpaid.empty
+            },
             csv_url="/pending.csv" + (f"?{query}" if query else ""),
             back_url="/pending" + (f"?{query}" if query else ""),
         )
@@ -269,8 +313,13 @@ def create_app(settings: Settings = None) -> FastAPI:
     # --- Upload -----------------------------------------------------------------------
 
     def upload_page(request: Request, imports=None, error=None, notified=None, notice=None):
+        conn = history.connect(settings.db_path)
+        try:
+            recent = history.recent_imports(conn)
+        finally:
+            conn.close()
         return render(request, "upload.html", active="upload", imports=imports, error=error,
-                      notifications=settings.ntfy.enabled, notified=notified, notice=notice)
+                      notifications=settings.ntfy.enabled, notified=notified, notice=notice, recent=recent)
 
     @app.get("/upload")
     def upload_form(request: Request):
@@ -384,6 +433,8 @@ def create_app(settings: Settings = None) -> FastAPI:
         return render(
             request, "categories.html", status_code=400 if error else 200, active="categories", error=error,
             categories=view.categories, rules=view.rules, month=month,
+            history=cat.category_history(categorized, month),
+            month_ratio=cat.month_ratio(month),
             spent=dict(zip(spent["Category"], spent["Amount"])),
             uncategorized=cat.uncategorized_summary(categorized).to_dict("records"),
         )
@@ -447,7 +498,7 @@ def create_app(settings: Settings = None) -> FastAPI:
             fmt = lambda value, c=currency: format_amount(value, c)
             projections[currency] = Markup(charts.columns(
                 [(month_name(m, short=True), float(a), month_name(m)) for m, a in zip(points["Month"], points["Amount"])],
-                fmt, tick_every=2,
+                fmt, lambda value, c=currency: compact_amount(value, c), tick_every=2,
             ))
         return render(request, "installments.html", active="installments", plans=plans.to_dict("records"),
                       summary=summary(plans), projections=projections)

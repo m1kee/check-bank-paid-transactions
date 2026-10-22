@@ -28,6 +28,7 @@ class Subscription:
     charges: int
     first_date: pd.Timestamp
     last_date: pd.Timestamp
+    amounts: tuple = ()  # every charge of the run, oldest first
 
     @property
     def annual_cost(self) -> float:
@@ -95,6 +96,7 @@ def detect_subscriptions(movements: pd.DataFrame, include_cancelled: bool = Fals
                 charges=len(run),
                 first_date=run.iloc[0]["Date"],
                 last_date=last["Date"],
+                amounts=tuple(float(a) for a in run["Amount"]),
             )
         )
     return sorted(found, key=lambda s: (s.currency, -s.annual_cost, s.description))

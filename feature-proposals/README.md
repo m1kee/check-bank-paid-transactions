@@ -29,7 +29,7 @@ Lógica que después solo hay que mostrar en la web. Se prueba con la CLI.
 | 23 | [Más tests y CI](23-tests-y-ci.md) | M | ✅ v0.2.0 |
 | 07 | [Detectar el encabezado automáticamente](07-deteccion-automatica-encabezado.md) | S | ✅ v0.2.0 |
 | 17 | [Perfiles de formato (pesos, dólares)](17-perfiles-de-formato.md) | M–L | ✅ v0.7.0 (formato USD validado con un archivo real) |
-| 10 | [Deduplicación entre descargas](10-deduplicacion-entre-descargas.md) | S–M | ✅ v0.2.0 (falta usarla en el historial, 09) |
+| 10 | [Deduplicación entre descargas](10-deduplicacion-entre-descargas.md) | S–M | ✅ v0.2.0 (el historial la usa desde v0.3.0) |
 | 01 | [Matching que respeta fechas](01-matching-con-fechas.md) | M | ✅ v0.2.0 |
 
 ## Fase 1 · Servidor + app web MVP ⭐
@@ -39,7 +39,7 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 |---|---|---|
 | 28 | [Servidor casero en el mini PC](28-servidor-casero.md) | M |
 | 26 | [Contenedor, dependencias y despliegue](26-contenedor-y-despliegue.md) | S — 🟡 contenedor en v0.5.0; falta el despliegue en un comando (Fase 4) |
-| 09 | [Historial en SQLite](09-historial-sqlite.md) | L — ✅ v0.3.0 (CLI con `--db`; la tabla `matches` llega con 03) |
+| 09 | [Historial en SQLite](09-historial-sqlite.md) | L — ✅ v0.3.0 (CLI con `--db`; las decisiones manuales van en `resolutions` desde v0.6.0) |
 | 22 | [App web (MVP)](22-app-web.md) | L — ✅ v0.4.0 (falta probarla en el celular vía Tailscale) |
 | 24 | [Logging e idioma consistente](24-logging-e-idioma.md) | S — ✅ v0.5.0 |
 

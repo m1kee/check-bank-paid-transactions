@@ -1,3 +1,4 @@
+{% from "_icons.html" import icon -%}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,23 +6,44 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="light dark">
     <title>{% block title %}bankcheck{% endblock %} · bankcheck</title>
+    <script>try { var t = localStorage.getItem("bankcheck-theme"); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
+    <link rel="preload" href="{{ url_for('static', path='fonts/inter-latin-wght.woff2') }}" as="font" type="font/woff2" crossorigin>
     <link rel="stylesheet" href="{{ url_for('static', path='style.css') }}">
     <style>{{ chart_css }}</style>
     <script src="{{ url_for('static', path='htmx.min.js') }}" defer></script>
+    <script src="{{ url_for('static', path='charts.js') }}" defer></script>
 </head>
 <body>
-    <nav>
-        <a href="/dashboard" class="{{ 'active' if active == 'dashboard' }}">Inicio</a>
-        <a href="/pending" class="{{ 'active' if active == 'pending' }}">Pendientes</a>
-        <a href="/movements" class="{{ 'active' if active == 'movements' }}">Movimientos</a>
-        <a href="/installments" class="{{ 'active' if active == 'installments' }}">Cuotas</a>
-        <a href="/subscriptions" class="{{ 'active' if active == 'subscriptions' }}">Suscripciones</a>
-        <a href="/categories" class="{{ 'active' if active == 'categories' }}">Categorías</a>
-        <a href="/upload" class="{{ 'active' if active == 'upload' }}">Subir</a>
-    </nav>
-    <main>
+<div class="app">
+    <aside class="sidebar">
+        <div class="sidebar-top">
+            <a class="brand" href="/dashboard"><span class="brand-mark">{{ icon("logo") }}</span>bankcheck</a>
+            <button type="button" class="btn ghost icon-only theme-toggle-mobile" data-theme-toggle aria-label="Cambiar tema claro u oscuro">{{ icon("moon") }}</button>
+        </div>
+        <nav class="nav" aria-label="Secciones">
+            {% for key, label, name in [
+                ("dashboard", "Resumen", "home"), ("pending", "Pendientes", "clock"), ("movements", "Movimientos", "list"),
+                ("installments", "Cuotas", "calendar"), ("subscriptions", "Suscripciones", "repeat"),
+                ("categories", "Categorías", "tag"), ("upload", "Subir", "upload")] %}
+            <a href="/{{ key }}" class="{{ 'active' if active == key }}" {% if active == key %}aria-current="page"{% endif %}>{{ icon(name) }}{{ label }}</a>
+            {% endfor %}
+        </nav>
+        <div class="sidebar-foot">
+            <span>v{{ version }}</span>
+            <button type="button" class="btn ghost icon-only" data-theme-toggle aria-label="Cambiar tema claro u oscuro">{{ icon("moon") }}</button>
+        </div>
+    </aside>
+    <main class="main">
+        <header class="page-head">
+            <div>
+                <h1 class="page-title">{% block heading %}{% endblock %}</h1>
+                <div class="page-sub">{% block subheading %}{% endblock %}</div>
+            </div>
+            <div class="page-actions">{% block actions %}{% endblock %}</div>
+        </header>
         {% block content %}{% endblock %}
-        <footer>bankcheck v{{ version }}</footer>
+        <div class="footer">bankcheck v{{ version }}</div>
     </main>
+</div>
 </body>
 </html>

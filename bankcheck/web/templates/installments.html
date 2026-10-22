@@ -1,41 +1,66 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}Cuotas{% endblock %}
+{% block heading %}Cuotas{% endblock %}
+{% block subheading %}Compras en cuotas que aún no terminas de pagar{% endblock %}
 {% block content %}
-<h1>Cuotas vigentes</h1>
-
 {% if not plans %}
-<div class="notice">No hay compras en cuotas pendientes en el historial.</div>
+<div class="card empty-state">
+    <div class="row-icon">{{ icon("calendar") }}</div>
+    <h3>Sin cuotas vigentes</h3>
+    <p>No hay compras en cuotas pendientes en el historial.</p>
+</div>
 {% else %}
-<div class="cards">
+<div class="kpis">
     {% for currency, (monthly, debt) in summary.items() %}
-    <div class="card"><h3>Compromiso mensual{% if summary | length > 1 %} ({{ currency }}){% endif %}</h3><p class="value">{{ monthly | money(currency) }}</p></div>
-    <div class="card"><h3>Deuda total en cuotas{% if summary | length > 1 %} ({{ currency }}){% endif %}</h3><p class="value">{{ debt | money(currency) }}</p></div>
+    <div class="card kpi">
+        <div class="kpi-label">{{ icon("calendar") }}Compromiso mensual{% if summary | length > 1 %} ({{ currency }}){% endif %}</div>
+        <div class="kpi-value hero">{{ monthly | money(currency) }}</div>
+        <div class="kpi-meta">Lo que pagas cada mes en cuotas</div>
+    </div>
+    <div class="card kpi">
+        <div class="kpi-label">{{ icon("wallet") }}Deuda total{% if summary | length > 1 %} ({{ currency }}){% endif %}</div>
+        <div class="kpi-value">{{ debt | money(currency) }}</div>
+        <div class="kpi-meta">{{ plans | selectattr('Currency', 'equalto', currency) | list | length }} compras en curso</div>
+    </div>
     {% endfor %}
 </div>
 
 {% for currency, chart in projections.items() %}
-<h2>Cuotas por mes, próximos 12 meses{% if projections | length > 1 %} ({{ currency }}){% endif %}</h2>
-<div class="card">{{ chart }}</div>
+<section class="card" style="margin-bottom:16px">
+    <div class="card-head">
+        <div>
+            <h2 class="card-title">Próximos 12 meses{% if projections | length > 1 %} ({{ currency }}){% endif %}</h2>
+            <div class="card-sub">Cuánto cobrarán las cuotas cada mes, a medida que terminan</div>
+        </div>
+    </div>
+    {{ chart }}
+</section>
 {% endfor %}
 
-<h2>Detalle</h2>
-<div class="table-wrap">
-    <table>
-        <thead><tr><th>Compra</th><th>Cuota</th><th class="num">Valor cuota</th><th class="num">Restantes</th><th class="num">Deuda restante</th><th>Termina</th></tr></thead>
-        <tbody>
-            {% for p in plans %}
-            <tr>
-                <td class="desc">{{ p['Description'] }}</td>
-                <td>{{ '%02d/%02d' | format(p['Current'], p['Total']) }}</td>
-                <td class="num">{{ p['Amount'] | money(p['Currency']) }}</td>
-                <td class="num">{{ p['Remaining'] }}</td>
-                <td class="num">{{ p['Remaining Debt'] | money(p['Currency']) }}</td>
-                <td>{{ p['Ends'] | month_name(short=True) }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-<p class="muted">Se calcula con la última cuota vista de cada compra. Si dejas de subir descargas, las cuotas pagadas después no se descuentan.</p>
+<section class="card flush">
+    <div class="card-head"><div><h2 class="card-title">Detalle</h2><div class="card-sub">Calculado con la última cuota vista de cada compra</div></div></div>
+    <div class="table-wrap">
+        <table class="data">
+            <thead><tr><th>Compra</th><th style="min-width:160px">Avance</th><th class="num">Valor cuota</th><th class="num">Restantes</th><th class="num">Deuda restante</th><th>Termina</th></tr></thead>
+            <tbody>
+                {% for p in plans %}
+                <tr>
+                    <td class="desc">{{ p['Description'] }}</td>
+                    <td>
+                        {{ meter(p['Current'] / p['Total'], title=p['Current'] ~ ' de ' ~ p['Total'] ~ ' cuotas') }}
+                        <div class="muted small" style="margin-top:4px">Cuota {{ '%02d/%02d' | format(p['Current'], p['Total']) }}</div>
+                    </td>
+                    <td class="num">{{ p['Amount'] | money(p['Currency']) }}</td>
+                    <td class="num">{{ p['Remaining'] }}</td>
+                    <td class="num"><strong>{{ p['Remaining Debt'] | money(p['Currency']) }}</strong></td>
+                    <td>{{ p['Ends'] | month_name(short=True) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</section>
+<p class="muted small">Si dejas de subir descargas, las cuotas pagadas después no se descuentan.</p>
 {% endif %}
 {% endblock %}

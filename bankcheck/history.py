@@ -257,6 +257,17 @@ def import_movements(
     return ImportResult(import_id=import_id, new_count=new_count, existing_count=existing_count)
 
 
+def recent_imports(conn: sqlite3.Connection, limit: int = 8) -> list:
+    """The latest imports, newest first, as dicts with "imported_at", "source_name", "new_count", "existing_count"."""
+    rows = conn.execute(
+        "SELECT imported_at, source_name, new_count, existing_count FROM imports ORDER BY id DESC LIMIT ?", (limit,)
+    ).fetchall()
+    return [
+        {"imported_at": datetime.datetime.fromisoformat(at), "source_name": name or "", "new_count": new, "existing_count": old}
+        for at, name, new, old in rows
+    ]
+
+
 def load_movements(conn: sqlite3.Connection, currency: str = None) -> pd.DataFrame:
     """
     Every movement in the history (optionally of one currency), sorted by date,

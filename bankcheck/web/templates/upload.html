@@ -1,41 +1,77 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}Subir{% endblock %}
+{% block heading %}Subir movimientos{% endblock %}
+{% block subheading %}La descarga «Saldos y Movimientos No Facturados» del banco, en pesos o dólares{% endblock %}
 {% block content %}
-<h1>Subir movimientos</h1>
-
-{% if error %}<div class="notice error">{{ error }}</div>{% endif %}
-{% if notice %}<div class="notice">{{ notice }}</div>{% endif %}
+{% if error %}<div class="notice error">{{ icon("alert") }}<div>{{ error }}</div></div>{% endif %}
+{% if notice %}<div class="notice success">{{ icon("check-circle") }}<div>{{ notice }}</div></div>{% endif %}
 
 {% if imports %}
-<div class="notice">
-    {% for item in imports %}
+<div class="notice success">
+    {{ icon("check-circle") }}
     <div>
-        <strong>{{ item.name }}</strong> ({{ item.sections | join(', ') }}):
-        {{ item.new_count }} {{ 'movimiento nuevo' if item.new_count == 1 else 'movimientos nuevos' }},
-        {{ item.existing_count }} ya {{ 'existía' if item.existing_count == 1 else 'existían' }}.
-        {% if item.warnings %}<ul class="warning">{% for w in item.warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
+        {% for item in imports %}
+        <div>
+            <strong>{{ item.name }}</strong> ({{ item.sections | join(', ') }}):
+            {{ item.new_count }} {{ 'movimiento nuevo' if item.new_count == 1 else 'movimientos nuevos' }},
+            {{ item.existing_count }} ya {{ 'existía' if item.existing_count == 1 else 'existían' }}.
+            {% if item.warnings %}<ul>{% for w in item.warnings %}<li>{{ w }}</li>{% endfor %}</ul>{% endif %}
+        </div>
+        {% endfor %}
+        {% if notified is not none %}<div class="small">{{ notified }} {{ 'notificación enviada' if notified == 1 else 'notificaciones enviadas' }}.</div>{% endif %}
+        <div class="inline-form mt"><a class="btn sm" href="/pending">Ver pendientes</a><a class="btn secondary sm" href="/dashboard">Ver resumen</a></div>
     </div>
-    {% endfor %}
-    {% if notified is not none %}<p class="muted">{{ notified }} {{ 'notificación enviada' if notified == 1 else 'notificaciones enviadas' }}.</p>{% endif %}
-    <p><a href="/pending">Ver pendientes →</a></p>
 </div>
 {% endif %}
 
-<form class="upload" method="post" action="/upload" enctype="multipart/form-data">
-    <label>Descargas del banco (.xls / .xlsx), en pesos o dólares
-        <input type="file" name="files" accept=".xls,.xlsx" multiple required>
-    </label>
-    <button type="submit">Importar</button>
-    <p class="muted">Puedes subir la misma descarga varias veces: los movimientos repetidos se cuentan una sola vez.</p>
-</form>
+<div class="grid">
+    <section class="card span-7">
+        <form method="post" action="/upload" enctype="multipart/form-data">
+            <label class="dropzone">
+                <span class="row-icon">{{ icon("upload") }}</span>
+                <strong>Elige uno o varios archivos .xls / .xlsx</strong>
+                <span class="muted small">Puedes subir la misma descarga varias veces: los movimientos repetidos se cuentan una sola vez.</span>
+                <input type="file" name="files" accept=".xls,.xlsx" multiple required>
+            </label>
+            <div class="mt" style="display:flex;justify-content:flex-end"><button type="submit" class="btn">{{ icon("upload") }}Importar</button></div>
+        </form>
+    </section>
+    <section class="card span-5">
+        <div class="card-head"><div><h2 class="card-title">Últimas descargas</h2><div class="card-sub">Lo que se importó cada vez</div></div></div>
+        {% if recent %}
+        <ul class="rows">
+            {% for r in recent %}
+            <li>
+                <div class="row-with-icon">
+                    <div class="row-icon">{{ icon("file") }}</div>
+                    <div class="row-main">
+                        <div class="row-title">{{ r.source_name or 'Descarga' }}</div>
+                        <div class="row-meta">{{ r.imported_at.strftime('%d/%m/%Y %H:%M') }}</div>
+                    </div>
+                </div>
+                <div class="row-amount">+{{ r.new_count }}<small>{{ r.existing_count }} repetidos</small></div>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="muted" style="margin:0">Todavía no has subido nada.</p>
+        {% endif %}
+    </section>
+</div>
 
-<h2>Notificaciones</h2>
-{% if notifications %}
-<form class="card category-form" method="post" action="/notifications/test">
-    <p class="muted">Activadas (ntfy). Después de cada subida llega el resumen de pendientes, y una sola vez cada aviso de presupuesto o de cobro duplicado.</p>
-    <button type="submit" class="small secondary">Enviar una de prueba</button>
-</form>
-{% else %}
-<p class="muted">Apagadas. Para recibirlas en el celular, instala la app <strong>ntfy</strong>, suscríbete a un tema con un nombre largo y difícil de adivinar, y define <code>BANKCHECK_NTFY_URL=https://ntfy.sh/&lt;tema&gt;</code>.</p>
-{% endif %}
+<section class="card">
+    <div class="card-head" style="margin-bottom:0">
+        <div class="row-with-icon">
+            <div class="row-icon">{{ icon("bell") }}</div>
+            <div>
+                <h2 class="card-title">Notificaciones</h2>
+                <div class="card-sub">{% if notifications %}Activadas (ntfy). Después de cada subida llega el resumen, y una sola vez cada aviso de presupuesto o de cobro duplicado.{% else %}Apagadas. Para recibirlas en el celular, instala la app <strong>ntfy</strong>, suscríbete a un tema con un nombre largo y difícil de adivinar, y define <code>BANKCHECK_NTFY_URL=https://ntfy.sh/&lt;tema&gt;</code>.{% endif %}</div>
+            </div>
+        </div>
+        {% if notifications %}
+        <form method="post" action="/notifications/test"><button type="submit" class="btn secondary sm">Enviar una de prueba</button></form>
+        {% endif %}
+    </div>
+</section>
 {% endblock %}

@@ -63,5 +63,5 @@ Una compra pendiente sigue pendiente aunque ya no aparezca en la vista del banco
 ## Estado (v0.3.0)
 Implementado en `bankcheck/history.py` y en la CLI con `--db`. Diferencias con la propuesta:
 - Además de `movements` hay una tabla `imports` (una fila por descarga importada).
-- La tabla `matches` no existe aún: el matching automático se recalcula en cada análisis y la tabla llega con la conciliación manual ([03](03-conciliacion-manual.md)), como una migración nueva.
+- No hay tabla `matches`: el matching automático se recalcula en cada análisis, y las decisiones manuales de [03](03-conciliacion-manual.md) se guardan en `resolutions` (migración v2, v0.6.0).
 - Guardar los archivos originales queda para la app web ([22](22-app-web.md)); la CLI los sigue moviendo a `processed-archive/`.

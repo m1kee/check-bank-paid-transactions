@@ -1,32 +1,35 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}Movimientos{% endblock %}
+{% block heading %}Movimientos{% endblock %}
+{% block subheading %}Todo el historial, con su categoría{% endblock %}
+{% block actions %}<a class="btn secondary" href="/categories">{{ icon("tag") }}Categorías y reglas</a>{% endblock %}
 {% block content %}
-<h1>Movimientos</h1>
-
-<form class="filters" method="get" action="/movements"
-      hx-get="/movements" hx-target="#movements-table" hx-push-url="true"
-      hx-trigger="input changed delay:300ms from:input[type=search], change">
-    <label class="wide">Buscar
-        <input type="search" name="q" value="{{ q }}" placeholder="Descripción">
-    </label>
-    <label>Moneda
-        <select name="currency">
-            <option value="">Todas</option>
-            {% for c in currencies %}<option value="{{ c }}" {{ 'selected' if c == currency }}>{{ c }}</option>{% endfor %}
-        </select>
-    </label>
-    <label>Categoría
-        <select name="category">
-            <option value="">Todas</option>
-            {% for c in categories %}<option value="{{ c.name }}" {{ 'selected' if c.name == category }}>{{ c.name }}</option>{% endfor %}
-            <option value="{{ uncategorized }}" {{ 'selected' if category == uncategorized }}>{{ uncategorized }}</option>
-            <option value="{{ payments_category }}" {{ 'selected' if category == payments_category }}>{{ payments_category }}</option>
-        </select>
-    </label>
-    <label>Desde <input type="date" name="date_from" value="{{ date_from or '' }}"></label>
-    <label>Hasta <input type="date" name="date_to" value="{{ date_to or '' }}"></label>
-    <noscript><button type="submit">Filtrar</button></noscript>
-</form>
-
-<div id="movements-table">{% include "_movements_table.html" %}</div>
+<section class="card flush">
+    <form class="filters" style="padding:20px 20px 4px;margin:0" method="get" action="/movements"
+          hx-get="/movements" hx-target="#movements-table" hx-push-url="true"
+          hx-trigger="input changed delay:300ms from:input[type=search], change">
+        <label class="field wide">Buscar
+            <input type="search" name="q" value="{{ q }}" placeholder="Descripción del comercio">
+        </label>
+        <label class="field">Moneda
+            <select name="currency">
+                <option value="">Todas</option>
+                {% for c in currencies %}<option value="{{ c }}" {{ 'selected' if c == currency }}>{{ c }}</option>{% endfor %}
+            </select>
+        </label>
+        <label class="field">Categoría
+            <select name="category">
+                <option value="">Todas</option>
+                {% for c in categories %}<option value="{{ c.name }}" {{ 'selected' if c.name == category }}>{{ c.name }}</option>{% endfor %}
+                <option value="{{ uncategorized }}" {{ 'selected' if category == uncategorized }}>{{ uncategorized }}</option>
+                <option value="{{ payments_category }}" {{ 'selected' if category == payments_category }}>{{ payments_category }}</option>
+            </select>
+        </label>
+        <label class="field">Desde <input type="date" name="date_from" value="{{ date_from or '' }}"></label>
+        <label class="field">Hasta <input type="date" name="date_to" value="{{ date_to or '' }}"></label>
+        <noscript><button class="btn secondary" type="submit">Filtrar</button></noscript>
+    </form>
+    <div id="movements-table">{% include "_movements_table.html" %}</div>
+</section>
 {% endblock %}

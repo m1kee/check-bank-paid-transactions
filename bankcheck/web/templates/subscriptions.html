@@ -1,32 +1,52 @@
 {% extends "base.html" %}
+{% from "_icons.html" import icon %}
 {% block title %}Suscripciones{% endblock %}
+{% block heading %}Suscripciones{% endblock %}
+{% block subheading %}Comercios que cobran cada mes por un monto parecido{% endblock %}
 {% block content %}
-<h1>Suscripciones detectadas</h1>
-<p class="muted">Comercios que cobran cada mes por un monto parecido, durante al menos 3 meses.</p>
-
 {% if not subscriptions %}
-<div class="notice">No se detectaron cobros recurrentes. Hacen falta al menos 3 meses de historial.</div>
+<div class="card empty-state">
+    <div class="row-icon">{{ icon("repeat") }}</div>
+    <h3>Sin cobros recurrentes</h3>
+    <p>No se detectaron cobros recurrentes. Hacen falta al menos 3 meses de historial.</p>
+</div>
 {% else %}
-<div class="cards">
+<div class="kpis">
     {% for currency, total in totals.items() %}
-    <div class="card"><h3>Al mes{% if totals | length > 1 %} ({{ currency }}){% endif %}</h3><p class="value">{{ total | money(currency) }}</p></div>
-    <div class="card"><h3>Al año{% if totals | length > 1 %} ({{ currency }}){% endif %}</h3><p class="value">{{ (total * 12) | money(currency) }}</p></div>
+    <div class="card kpi">
+        <div class="kpi-label">{{ icon("repeat") }}Al mes{% if totals | length > 1 %} ({{ currency }}){% endif %}</div>
+        <div class="kpi-value hero">{{ total | money(currency) }}</div>
+        <div class="kpi-meta">{{ subscriptions | selectattr('currency', 'equalto', currency) | list | length }} suscripciones activas</div>
+    </div>
+    <div class="card kpi">
+        <div class="kpi-label">{{ icon("calendar") }}Al año{% if totals | length > 1 %} ({{ currency }}){% endif %}</div>
+        <div class="kpi-value">{{ (total * 12) | money(currency) }}</div>
+        {% set raised = subscriptions | selectattr('currency', 'equalto', currency) | selectattr('price_increased') | list %}
+        <div class="kpi-meta">{% if raised %}<span class="badge danger">▲ {{ raised | length }} subieron de precio</span>{% else %}Sin alzas de precio{% endif %}</div>
+    </div>
     {% endfor %}
 </div>
 
-<ul class="list">
-    {% for s in subscriptions %}
-    <li>
-        <div>
-            <div class="desc">{{ s.description }}</div>
-            <div class="meta">
-                {{ s.charges }} cobros desde {{ s.first_date | date }} · último {{ s.last_date | date }} · próximo ~{{ s.next_charge | date }}
-                {% if s.price_increased %}<br><span class="tag danger">▲ Subió {{ s.price_change | money(s.currency) }}</span> (antes {{ s.previous_amount | money(s.currency) }}){% endif %}
+<section class="card">
+    <ul class="rows">
+        {% for s in subscriptions %}
+        <li>
+            <div class="row-with-icon">
+                <div class="row-icon {{ 'danger' if s.price_increased }}">{{ icon("repeat") }}</div>
+                <div class="row-main">
+                    <div class="row-title">{{ s.description }}</div>
+                    <div class="row-meta">
+                        <span>{{ s.charges }} cobros desde {{ s.first_date | date }}</span>
+                        <span>· próximo ~{{ s.next_charge | date }}</span>
+                        {% if s.price_increased %}<span class="badge danger">▲ Subió {{ s.price_change | money(s.currency) }}</span>{% endif %}
+                    </div>
+                </div>
             </div>
-        </div>
-        <div class="amount">{{ s.amount | money(s.currency) }}<div class="meta">{{ s.annual_cost | money(s.currency) }}/año</div></div>
-    </li>
-    {% endfor %}
-</ul>
+            <div class="row-spark">{{ sparkline(s.amounts, "Monto de cada cobro") }}</div>
+            <div class="row-amount">{{ s.amount | money(s.currency) }}<small>{{ s.annual_cost | money(s.currency) }} al año</small></div>
+        </li>
+        {% endfor %}
+    </ul>
+</section>
 {% endif %}
 {% endblock %}

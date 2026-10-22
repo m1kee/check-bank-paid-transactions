@@ -123,6 +123,25 @@ def daily_spending(categorized: pd.DataFrame, month: pd.Period, currency: str = 
     return pd.DataFrame({"Date": days, "Amount": totals.values})
 
 
+def monthly_spending(categorized: pd.DataFrame, end: pd.Period, months: int = 12, currency: str = "CLP") -> pd.DataFrame:
+    """Total spent in each of the `months` months up to `end` ("Month", "Amount"), zero where nothing was spent."""
+    df = categorized[(categorized["Currency"] == currency) & (categorized["Category"] != PAYMENTS)]
+    totals = df.groupby(df["Date"].dt.to_period("M"))["Amount"].sum()
+    periods = [end - k for k in range(months - 1, -1, -1)]
+    return pd.DataFrame({"Month": periods, "Amount": [float(totals.get(p, 0)) for p in periods]})
+
+
+def category_history(categorized: pd.DataFrame, end: pd.Period, months: int = 6, currency: str = "CLP") -> dict:
+    """{category: [amount per month]} for the `months` months up to `end`, oldest first."""
+    df = categorized[(categorized["Currency"] == currency) & (categorized["Category"] != PAYMENTS)]
+    periods = [end - k for k in range(months - 1, -1, -1)]
+    table = df.groupby([df["Category"], df["Date"].dt.to_period("M")])["Amount"].sum()
+    return {
+        category: [float(table.get((category, p), 0)) for p in periods]
+        for category in df["Category"].unique()
+    }
+
+
 def uncategorized_summary(categorized: pd.DataFrame, limit: int = 30) -> pd.DataFrame:
     """The merchants without a category, most frequent first, to add rules for them."""
     df = categorized[categorized["Category"] == UNCATEGORIZED]

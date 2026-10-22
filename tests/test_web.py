@@ -157,7 +157,7 @@ class MovementsTests(WebTestCase):
     def test_lists_every_movement(self):
         page = self.client.get("/movements").text
         self.assertIn("3 movimientos", page)
-        self.assertIn("<nav>", page)
+        self.assertIn('class="nav"', page)
 
     def test_search_and_date_filters(self):
         page = self.client.get("/movements", params={"q": "uber", "date_from": "2026-09-05", "date_to": ""}).text
@@ -170,7 +170,7 @@ class MovementsTests(WebTestCase):
             "/movements", params={"q": "lider"}, headers={"HX-Request": "true", "HX-Target": "movements-table"}
         ).text
         self.assertIn("LIDER", page)
-        self.assertNotIn("<nav>", page)
+        self.assertNotIn('class="nav"', page)
 
 
 class PasswordTests(WebTestCase):
