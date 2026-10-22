@@ -8,6 +8,9 @@ PROCESSED_ARCHIVE_FOLDER = "processed-archive"
 # Folder to store the generated HTML reports
 REPORTS_FOLDER = "reports"
 
+# SQLite history of every imported movement (used with --db and by the web app)
+DB_PATH = "data/bank.db"
+
 # --- Bank Export Formats ---
 
 # Each section of the bank export starts with a title row (e.g. "Movimientos

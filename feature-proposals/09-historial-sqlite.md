@@ -56,6 +56,12 @@ Una compra pendiente sigue pendiente aunque ya no aparezca en la vista del banco
 - La DB tiene datos sensibles: va al `.gitignore` (ver [25](25-privacidad-retencion-cifrado.md)).
 
 ## Criterios de aceptación
-- [ ] Importar dos descargas del mismo mes no duplica movimientos.
-- [ ] Una compra impaga sigue apareciendo como pendiente después del cierre del período.
-- [ ] Un pago del período siguiente puede emparejar una compra del período anterior.
+- [x] Importar dos descargas del mismo mes no duplica movimientos.
+- [x] Una compra impaga sigue apareciendo como pendiente después del cierre del período.
+- [x] Un pago del período siguiente puede emparejar una compra del período anterior.
+
+## Estado (v0.3.0)
+Implementado en `bankcheck/history.py` y en la CLI con `--db`. Diferencias con la propuesta:
+- Además de `movements` hay una tabla `imports` (una fila por descarga importada).
+- La tabla `matches` no existe aún: el matching automático se recalcula en cada análisis y la tabla llega con la conciliación manual ([03](03-conciliacion-manual.md)), como una migración nueva.
+- Guardar los archivos originales queda para la app web ([22](22-app-web.md)); la CLI los sigue moviendo a `processed-archive/`.

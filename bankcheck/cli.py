@@ -1,6 +1,7 @@
 """Command-line entry point: read bank downloads, find unpaid purchases and open the HTML report."""
 import argparse
 import datetime
+import hashlib
 import os
 import shutil
 import sys
@@ -9,7 +10,7 @@ from pathlib import Path
 
 import pandas as pd
 
-from bankcheck import __version__, config
+from bankcheck import __version__, config, history
 from bankcheck.analysis import analyze
 from bankcheck.dedup import merge_downloads
 from bankcheck.formatting import CURRENCY_NAMES, format_amount
@@ -29,9 +30,9 @@ def build_arg_parser() -> argparse.ArgumentParser:
     parser.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     parser.add_argument(
         "input_files",
-        nargs="+",
+        nargs="*",
         help="Uno o más archivos de movimientos (.xls/.xlsx), en pesos o dólares. "
-        "Ej: 'pre-process-data/movimientos.xls'",
+        "Ej: 'pre-process-data/movimientos.xls'. Con --db se puede omitir para revisar el historial.",
     )
     parser.add_argument(
         "-o", "--output",
@@ -43,6 +44,14 @@ def build_arg_parser() -> argparse.ArgumentParser:
         dest="start_date",
         type=parse_cli_date,
         help="Fecha de inicio del análisis (YYYY-MM-DD). Se ignoran los movimientos anteriores.",
+    )
+    parser.add_argument(
+        "--db",
+        nargs="?",
+        const=config.DB_PATH,
+        metavar="RUTA",
+        help="Importa los archivos al historial SQLite y analiza todo el historial, no solo "
+        f"estas descargas (por defecto '{config.DB_PATH}').",
     )
     return parser
 
@@ -56,6 +65,33 @@ def save_clean_file(movements: pd.DataFrame, path: str):
         date_col = movements.columns.get_loc("Date") + 1
         for (cell,) in sheet.iter_rows(min_row=2, min_col=date_col, max_col=date_col):
             cell.number_format = "DD/MM/YYYY"
+
+
+def file_sha256(path: str) -> str:
+    return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def import_to_history(db_path: str, downloads: list) -> pd.DataFrame:
+    """Import each (path, movements) download into the history and return the whole history."""
+    try:
+        conn = history.connect(db_path)
+    except history.HistoryError as e:
+        print(f"Error: {e}", file=sys.stderr)
+        sys.exit(1)
+    try:
+        for path, frame in downloads:
+            result = history.import_movements(
+                conn, frame, source_name=Path(path).name, sha256=file_sha256(path)
+            )
+            print(
+                f"[Historial] {Path(path).name}: {result.new_count} movimientos nuevos, "
+                f"{result.existing_count} ya existían"
+            )
+        movements = history.load_movements(conn)
+    finally:
+        conn.close()
+    print(f"[Historial] {len(movements)} movimientos en total ({db_path})")
+    return movements
 
 
 def archive_inputs(paths: list, timestamp: str):
@@ -113,7 +149,10 @@ def write_and_open_report(html: str, timestamp: str) -> str:
 
 
 def main():
-    args = build_arg_parser().parse_args()
+    arg_parser = build_arg_parser()
+    args = arg_parser.parse_args()
+    if not args.input_files and not args.db:
+        arg_parser.error("indica al menos un archivo, o usa --db para analizar el historial")
 
     print("=============================================")
     print(f"====== Account Analysis Tool v{__version__} ======")
@@ -132,20 +171,24 @@ def main():
         for warning in parsed.warnings:
             print(f"Aviso: {warning}")
         print(f"  {len(parsed.movements)} movimientos ({', '.join(parsed.sections)})")
-        downloads.append(parsed.movements)
+        downloads.append((path, parsed.movements))
 
-    movements = merge_downloads(downloads)
+    downloaded = merge_downloads([frame for _, frame in downloads])
     if len(downloads) > 1:
-        print(f"Total sin duplicados: {len(movements)} movimientos")
+        print(f"Total sin duplicados: {len(downloaded)} movimientos")
 
-    # 2. Save the clean file and archive the originals
-    prefix = Path(args.output_prefix).stem if args.output_prefix else "cleaned-movements"
-    clean_path = os.path.join(config.CLEAN_DATA_FOLDER, f"{prefix}_{timestamp}.xlsx")
-    save_clean_file(movements, clean_path)
-    print(f"\nArchivo limpio guardado en: {clean_path}")
-    archive_inputs(args.input_files, timestamp)
+    # 2. Add the downloads to the history, before the originals are moved
+    movements = import_to_history(args.db, downloads) if args.db else downloaded
 
-    # 3. Analyze and report
+    # 3. Save the clean file and archive the originals
+    if downloads:
+        prefix = Path(args.output_prefix).stem if args.output_prefix else "cleaned-movements"
+        clean_path = os.path.join(config.CLEAN_DATA_FOLDER, f"{prefix}_{timestamp}.xlsx")
+        save_clean_file(downloaded, clean_path)
+        print(f"\nArchivo limpio guardado en: {clean_path}")
+        archive_inputs(args.input_files, timestamp)
+
+    # 4. Analyze and report
     if args.start_date:
         print(f"\nFiltro de fecha activo: analizando desde {args.start_date:%Y-%m-%d}")
     results = analyze(movements, start_date=args.start_date)
