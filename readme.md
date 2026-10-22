@@ -7,7 +7,7 @@ Current version: see [`CHANGELOG.md`](CHANGELOG.md) · Roadmap: [`feature-propos
 ## ✨ Features
 
 * **Format detection:** finds the movements section and its header by name ("Movimientos Nacionales" / "Movimientos Internacionales") and fails with a clear error if the bank changes the layout.
-* **Pesos and dollars:** each movement carries its currency, and each currency is reconciled separately. Pesos are paid purchase by purchase; dollars are paid by statement balance, so a dollar payment covers the run of consecutive purchases that adds up to it (`MATCHING_MODE` in `config.py`).
+* **Pesos and dollars:** each movement carries its currency, and each currency is reconciled separately. Pesos are paid purchase by purchase; dollars are paid by statement balance, so a dollar payment covers the run of consecutive purchases that adds up to it (`MATCHING_MODE` in `config.py`). For dollars the app also shows the **next statement**: the total of the purchases in your latest download, which is the bank's unbilled view.
 * **Notifications (ntfy):** after each upload, a summary of what's pending on your phone, plus a one-time notice when a budget passes 80%/100% or a charge looks duplicated. Free, off by default.
 * **Date-aware matching:** a payment only covers a purchase of the same amount made before it (or the same day), within a configurable window; repeated amounts are paid oldest first.
 * **Several downloads at once:** movements repeated across downloads are counted once.

@@ -29,6 +29,17 @@
 {% for result in results %}
 {% set currency = result.currency %}
 {% if results | length > 1 or currency != 'CLP' %}<h2>{{ currency_names.get(currency, currency) }}</h2>{% endif %}
+{% set u = upcoming.get(currency) %}
+{% if u %}
+<div class="card hero upcoming">
+    <h3>A pagar en la próxima facturación</h3>
+    <p class="value">{{ u.amount | money(currency) }}</p>
+    <p class="meta">
+        {% if u.count %}{{ u.count }} {{ 'compra' if u.count == 1 else 'compras' }} desde el {{ u.since | date }}{% else %}Sin compras por facturar{% endif %}
+        · según tu descarga del {{ u.seen_at | date }}. Es lo que aparece como no facturado en el banco; descarga de nuevo para actualizarlo.
+    </p>
+</div>
+{% endif %}
 <div class="cards">
     <div class="card"><h3>Sin pagar</h3><p class="value {{ 'danger' if result.total_unpaid else 'success' }}">{{ result.total_unpaid | money(currency) }}</p></div>
     <div class="card"><h3>Compras sin pago</h3><p class="value">{{ result.unpaid | length }} de {{ (result.unpaid | length) + (result.matches | length) + (result.resolved | length) }}</p></div>

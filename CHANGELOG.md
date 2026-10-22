@@ -6,6 +6,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-21
+
+### Added
+- "Próxima facturación" para los dólares (o cualquier moneda en modo `statement`): el total de las compras de la última descarga, que es la vista de movimientos no facturados del banco, con cuántas compras son, desde qué fecha y de qué descarga sale. Aparece en Inicio, arriba de los dólares en Pendientes y en la notificación después de subir, en lugar de "N compras sin pagar" para esa moneda.
+
 ## [0.7.0] - 2026-10-21
 
 ### Added
@@ -124,7 +129,8 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.4.0...v0.5.0

@@ -22,7 +22,7 @@ from urllib.parse import urlsplit
 
 import pandas as pd
 
-from bankcheck import alerts, history, reconcile
+from bankcheck import alerts, billing, history, reconcile
 from bankcheck import categories as cat
 from bankcheck.analysis import analyze
 from bankcheck.export import pending_text
@@ -96,12 +96,21 @@ def send(settings: NtfySettings, message: Message) -> bool:
 # --- Messages --------------------------------------------------------------------
 
 
-def pending_summary(results: list, today: datetime.date = None, details: bool = False) -> Message:
-    """🧾 3 compras sin pagar · $27.950 · la más antigua tiene 12 días"""
+def pending_summary(results: list, today: datetime.date = None, details: bool = False, upcoming: list = ()) -> Message:
+    """
+    🧾 3 compras sin pagar · $27.950 · la más antigua tiene 12 días
+    For a currency paid by statement balance, the next statement's total instead (`upcoming`).
+    """
     today = pd.Timestamp(today or datetime.date.today())
+    by_statement = {u.currency: u for u in upcoming}
     lines = []
+    for u in upcoming:
+        if u.count:
+            prefix = f"{CURRENCY_NAMES.get(u.currency, u.currency)}: " if len(results) > 1 else ""
+            lines.append(f"{prefix}próxima facturación {format_amount(u.amount, u.currency)} "
+                         f"({u.count} {'compra' if u.count == 1 else 'compras'})")
     for result in results:
-        if result.unpaid.empty:
+        if result.unpaid.empty or result.currency in by_statement:
             continue
         count = len(result.unpaid)
         oldest = (today - result.unpaid["Date"].min()).days
@@ -178,7 +187,10 @@ def messages_after_import(conn: sqlite3.Connection, settings: NtfySettings, toda
     lines = cat.budget_lines(cat.list_categories(conn), cat.spending(categorized, month), month, today)
 
     once = budget_messages(lines, month) + alert_messages(alerts.find_alerts(movements), settings.details)
-    return [pending_summary(results, today, settings.details)] + [m for m in once if not _already_sent(conn, m.key)]
+    upcoming = billing.load_upcoming(conn, movements)
+    return [pending_summary(results, today, settings.details, upcoming)] + [
+        m for m in once if not _already_sent(conn, m.key)
+    ]
 
 
 def notify_after_import(conn: sqlite3.Connection, settings: NtfySettings, today: datetime.date = None) -> int:
