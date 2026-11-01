@@ -175,6 +175,15 @@ docker compose logs -f                            # see imports and requests
 
 The port is published on `127.0.0.1` only. To reach it from other devices, set `BANKCHECK_BIND` in `.env` (e.g. the machine's Tailscale IP) or put `tailscale serve 8000` in front of it. `BANKCHECK_PORT` and `TZ` (default `America/Santiago`) can also go in `.env`. To update: `git pull && docker compose up -d --build`.
 
+### Kubernetes
+
+The image also runs as is on a locked-down cluster: as a non-root numeric user (set `runAsUser` in the pod), with a read-only root filesystem plus an `emptyDir` on `/tmp` and a volume on `/data`. Notes:
+
+* **Port** `8000`. **Readiness probe:** `/static/style.css` (static files skip the password; `/` answers 401).
+* **One replica with the `Recreate` strategy:** never two pods on the same SQLite file.
+* Pass `BANKCHECK_PASSWORD` from a Secret and set `TZ`. HTTP Basic is the only login the app has today, so put an authenticating proxy in front of it before exposing it to the internet.
+* Back up the `/data` volume; it holds the whole history.
+
 ---
 
 ## 🧪 Tests

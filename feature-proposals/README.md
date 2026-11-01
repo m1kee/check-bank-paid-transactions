@@ -37,10 +37,10 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 
 | # | Feature | Esfuerzo |
 |---|---|---|
-| 28 | [Servidor casero en el mini PC](28-servidor-casero.md) | M |
-| 26 | [Contenedor, dependencias y despliegue](26-contenedor-y-despliegue.md) | S — 🟡 contenedor en v0.5.0; falta el despliegue en un comando (Fase 4) |
+| 28 | [Servidor casero en el mini PC](28-servidor-casero.md) | M — ✅ el servidor y su clúster existen aparte; la app corre ahí desde el 2026-11-01, privada y con respaldo diario del volumen |
+| 26 | [Contenedor, dependencias y despliegue](26-contenedor-y-despliegue.md) | S — ✅ contenedor en v0.5.0; despliegue con GitOps (2026-11-01): la imagen se arma desde `main` y la versión se fija en el repo de infraestructura |
 | 09 | [Historial en SQLite](09-historial-sqlite.md) | L — ✅ v0.3.0 (CLI con `--db`; las decisiones manuales van en `resolutions` desde v0.6.0) |
-| 22 | [App web (MVP)](22-app-web.md) | L — ✅ v0.4.0 (falta probarla en el celular vía Tailscale) |
+| 22 | [App web (MVP)](22-app-web.md) | L — ✅ v0.4.0, en producción desde el 2026-11-01 (falta probarla en el celular) |
 | 24 | [Logging e idioma consistente](24-logging-e-idioma.md) | S — ✅ v0.5.0 |
 
 ## Fase 2 · Conciliación completa en la UI
@@ -70,7 +70,7 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 |---|---|---|
 | 19 | [Copiar / exportar pendientes](19-exportar-pendientes.md) | XS — ✅ v0.6.0 |
 | 20 | [Notificaciones](20-notificaciones.md) | M — ✅ v0.7.0 (ntfy) |
-| 25 | [Privacidad: retención y respaldos cifrados](25-privacidad-retencion-cifrado.md) | S–M — ⏸ pospuesta: al principio, respaldo en el mismo servidor (ver 28); más adelante, el NAS |
+| 25 | [Privacidad: retención y respaldos cifrados](25-privacidad-retencion-cifrado.md) | S–M — 🟡 respaldo diario cifrado (restic) del volumen en el NAS desde el 2026-11-01; falta la retención de datos |
 | 06 | [Flags de la CLI](06-flags-cli.md) | S — ✅ v0.6.0 |
 | 21 | [Procesar al descargar (sin abrir la web)](21-automatizacion-carpeta.md) | S–M — ✖ descartada: los archivos siempre se suben por la web |
 
