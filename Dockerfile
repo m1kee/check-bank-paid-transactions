@@ -1,5 +1,7 @@
 # Web app image. Build and run with `docker compose up -d --build` (see readme).
-FROM python:3.13-slim
+
+# Build stage: uv installs the dependencies and the app into /app/.venv
+FROM python:3.13-slim AS build
 
 COPY --from=ghcr.io/astral-sh/uv:0.11.0 /uv /bin/uv
 
@@ -16,6 +18,18 @@ RUN uv sync --locked --no-dev --no-install-project
 COPY readme.md ./
 COPY bankcheck ./bankcheck
 RUN uv sync --locked --no-dev
+
+# Final image: only Python and the venv. Neither uv nor pip are needed to run the app,
+# and their bundled libraries (Rust crates in uv, urllib3/msgpack/setuptools in pip)
+# are where the image's vulnerabilities came from.
+FROM python:3.13-slim
+
+RUN rm -rf /usr/local/bin/pip* \
+        /usr/local/lib/python3.13/site-packages/pip* \
+        /usr/local/lib/python3.13/ensurepip/_bundled
+
+WORKDIR /app
+COPY --from=build /app /app
 
 # All the data (history, uploads) lives in the /data volume
 ENV PATH="/app/.venv/bin:$PATH" \

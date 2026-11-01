@@ -6,6 +6,11 @@ El formato sigue [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/) y e
 
 ## [Unreleased]
 
+## [0.11.1] - 2026-11-01
+
+### Security
+- La imagen de Docker se construye en dos etapas: la imagen final ya no lleva `uv` ni `pip`, que no se usan para correr la app. De ahí venían las vulnerabilidades que reportaba Trivy (1 crítica y 10 altas): las crates de Rust de `uv` (`zip`, `quinn-proto`, `rustls-webpki`) y las librerías que trae `pip` (`urllib3`, `msgpack`, `setuptools`).
+
 ## [0.11.0] - 2026-10-22
 
 ### Added
@@ -166,7 +171,8 @@ Versión inicial, tal como estaba en `main` antes de versionar.
 - Reporte HTML en modo oscuro que se abre en el navegador.
 - Detección de pagos por `PAGO PESOS TAR`, `PAGO PESOS TEF`, `PAGO ONLINE` y `MERCADOPAGO`.
 
-[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.11.0...HEAD
+[Unreleased]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.11.1...HEAD
+[0.11.1]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.11.0...v0.11.1
 [0.11.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.10.0...v0.11.0
 [0.10.0]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.1...v0.10.0
 [0.9.1]: https://github.com/m1kee/check-bank-paid-transactions/compare/v0.9.0...v0.9.1
