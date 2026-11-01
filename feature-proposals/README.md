@@ -74,6 +74,12 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 | 06 | [Flags de la CLI](06-flags-cli.md) | S — ✅ v0.6.0 |
 | 21 | [Procesar al descargar (sin abrir la web)](21-automatizacion-carpeta.md) | S–M — ✖ descartada: los archivos siempre se suben por la web |
 
+## Fase 5 · Varios usuarios
+
+| # | Feature | Esfuerzo |
+|---|---|---|
+| 31 | [Usuarios y login con Google / Microsoft](31-usuarios-y-login.md) | L |
+
 ## Dependencias clave
 
 - **29 (núcleo)** va primero: sin él, la web duplicaría la lógica de la CLI.
@@ -82,6 +88,7 @@ Subir archivos, ver pendientes y ver el historial desde cualquier dispositivo.
 - **17 (perfiles)** es la base de **18** (dólares).
 - **01 (matching por fechas)** es la base de **04** y **11**.
 - **13 (categorías)** es la base de **30**, **14** y **15**.
+- **31 (usuarios)** necesita separar los datos por hogar en **09**: sin eso, un login nuevo dejaría a todos viendo todo. Es lo que falta para abrir **22** a otras personas o a internet.
 
 ## Plantilla para nuevas propuestas
 
